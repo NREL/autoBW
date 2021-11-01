@@ -1,0 +1,15 @@
+flags:
+    create_new_project : True
+    pickle_project : True
+
+fileIO:
+    data_directory: None
+    activity_changes: import_template.xlsx
+    project_picklename : proj.obj
+
+project:
+    name: psh_lca
+    database_sources: # a dictionary of database name : database location pairs
+    - biosphere3 : None # This database does not need to be imported so its location is None
+    - ecoinvent 3.7.1 cutoff : r'C:\Users\rhanes\Documents\ecoinvent_data\ecoinvent_data\datasets'
+    

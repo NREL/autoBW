@@ -1,15 +1,21 @@
 flags:
-    create_new_project : True
-    pickle_project : True
+    create_new_project : True # if False, attempt to set an existing project as current
 
 fileIO:
     data_directory: None
     activity_changes: import_template.xlsx
-    project_picklename : proj.obj
 
 project:
     name: psh_lca
-    database_sources: # a dictionary of database name : database location pairs
-    - biosphere3 : None # This database does not need to be imported so its location is None
-    - ecoinvent 3.7.1 cutoff : r'C:\Users\rhanes\Documents\ecoinvent_data\ecoinvent_data\datasets'
-    
+    databases: # a dictionary of database name : import location pairs
+        biosphere3 : None # This database does not need to be imported so its location is None
+        ecoinvent 3.7.1 cutoff : r'C:\Users\rhanes\Documents\ecoinvent_data\ecoinvent_data\datasets'
+    methods: #define manually or provide search string to pull from DB?
+        GWP : accdd0f59a6ea000a2b3fd21bcc93a15
+        CED : 71c568f03a3f448cbe3a1620d505b061
+    functional_unit: # list of dictionaries
+        ethanol : accdd0f59a6ea000a2b3fd21bcc93a15, 100
+        gasoline : accdd0f59a6ea000a2b3fd21bcc93a15, 75
+        jet fuel : accdd0f59a6ea000a2b3fd21bcc93a15, 50
+        diesel : accdd0f59a6ea000a2b3fd21bcc93a15, 65
+        

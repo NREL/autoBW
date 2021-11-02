@@ -27,29 +27,93 @@ except IOError as err:
     print(f'Could not open {config_yaml_filename} for configuration.')
     exit(1)
 
-# do variable assignments and filename construction as necessary
-project_picklename = fileIO.get('project_picklename', 'rb')
+# Project setup
+_name = project.get('name')
 
 # if a new project is being created, instantiate it
-if flags.get('create_new_project',True):
-    proj = Project()
-    # if pickling is True, then pickle the project
-    if flags.get('pickle_project', True):
-        pickle.dump(
-            proj,
-            open(
-                project_picklename,
-                'wb'
-            )
+if flags.get('create_new_project') and _name in list(bw.projects):
+    # If the project already exists, throw an error.
+    print(f'Project {_name} already exists.')
+    exit(1)
+
+# Project setup
+bw.projects.set_current(project.get('name'))
+
+# @TODO Log current project name and directory
+
+# Default setup step for biosphere database
+bw.bw2setup()
+
+# Imported database setup
+# Get the dictionary of database names:locations
+_databases = project.get('database_sources')
+
+# @TODO Log list of databases in the current project
+
+# trim the database dictionary so it contains only those databases
+# that don't already exist
+_db_create = {
+    db: _databases[db]
+    for db in [key for key, value in _databases.items()]
+    if db not in [key for key, value in bw.databases.items()]
+}
+
+# if all of the databases to import already exist, then
+# _db_create will be an empty dictionary. In this case, take no action.
+if len(_db_create) > 0:
+    # If _db_create contains elements, then these are datbases that
+    # don't exist and must be imported and postprocessed.
+    for _name, _loc in _db_create.items():
+        # @TODO Add database format parameter for selecting the import method
+        # Excel importer, FORWAST, others?
+        _imported_db = bw.SingleOutputEcospold2Importer(
+            _loc,
+            _name
         )
-else:
-    # if a new project is not being created, then read in an existing pickle
-    proj = pickle.load(
-        open(
-            project_picklename,
-            'rb'
-        )
-    )
+        _imported_db.apply_strategies()
+        _imported_db.statistics()
+        _imported_db.write_database()
+
+    # @TODO Log "databases updated", list of databases in the current project
+
+
+# Activity and exchange editing
+
+# @TODO: Log "before" status of database
+
+# Create new activities
+    # Generate unique code and store it somewhere
+
+    # If the exact activity already exists, throw a warning and move on
+
+# Delete exchanges from existing activities
+    # If the activity does not exist
+    # If the exchange in the activity does not exist
+
+# Add exchanges to existing activities
+    # If the activity does not exist
+    # If the exchange already exists
+
+# @TODO: Log "after" status and record changes made
+
+# Methods setup
+
+
+# Calculation setup
+
+
+# Execute LCIA and gather raw results
+
+
+# Format results and generate diagnostic plots
+
+
+
+
+
+
+
+
 
 
 

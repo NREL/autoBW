@@ -2,18 +2,17 @@ flags:
     create_new_project : True # if False, attempt to set an existing project as current
 
 fileIO:
-    data_directory: None
-    activity_changes: import_template.xlsx
+    data_directory: C:\Users\rhanes\GitHub\autoBW
+    db_edits: import_test.xlsx
 
 project:
     name: psh_lca
     databases: # a dictionary of database name : import location pairs
-        biosphere3 : None # This database does not need to be imported so its location is None
-        ecoinvent 3.7.1 cutoff : r'C:\Users\rhanes\Documents\ecoinvent_data\ecoinvent_data\datasets'
+        ecoinvent 3.7.1 cutoff : r'C:/Users/rhanes/Documents/ecoinvent_data/ecoinvent_data/datasets'
     methods: #define manually or provide search string to pull from DB?
         GWP : accdd0f59a6ea000a2b3fd21bcc93a15
         CED : 71c568f03a3f448cbe3a1620d505b061
-    functional_unit: # list of dictionaries
+    functional_units: # list of dictionaries. Value list is [exchange key, amount in kg]
         ethanol : accdd0f59a6ea000a2b3fd21bcc93a15, 100
         gasoline : accdd0f59a6ea000a2b3fd21bcc93a15, 75
         jet fuel : accdd0f59a6ea000a2b3fd21bcc93a15, 50

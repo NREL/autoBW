@@ -6,9 +6,18 @@ fileIO:
     data_directory: C:\Users\rhanes\GitHub\autoBW
     db_edits: import_test.xlsx
 
-project:
+project_parameters:
     name: psh_lca
+    include_databases: 
+    - biosphere3
+    - ecoinvent3.7.1 cut-off
 
+foreground_db:
+    custom_db_name : hydro
+    link_to:
+        biosphere3 : name, unit, location, categories
+        ecoinvent3.7.1 cut-off : name, unit, location, reference product
+    
 
 calculations:
     methods: #define manually or provide search string to pull from DB?

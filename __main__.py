@@ -13,35 +13,6 @@ import pdb
 parser = argparse.ArgumentParser(description='Execute automatic Brightway LCIA')
 parser.add_argument('--data', help='Path to data directory.')
 parser.add_argument('--config', help='Name of local config file.')
-parser.add_argument('--db_name',
-                    help='Names of databases for import. Only use double '
-                         'quotes if names contain spaces.',
-                    nargs='+',
-                    action='append')
-parser.add_argument('--db_loc',
-                    help='Paths to local databases for import. Only use double'
-                         ' quotes around path if it contains spaces.',
-                    nargs='+',
-                    action='append')
-parser.add_argument('--db_format',
-                    help='Methods to use for database import. Only use double '
-                         'quotes if methods contain spaces.',
-                    nargs='+',
-                    action='append')
-
-# Error checking for database import: length of databases provided must be
-# equal to the length of database formats provided.
-db_name = parser.parse_args().db_name[0]
-db_loc = parser.parse_args().db_loc[0]
-db_format = parser.parse_args().db_format[0]
-
-if not len(db_name) == len(db_loc) == len(db_format):
-    logging.warning(msg=f'{len(db_name)} database names; '
-                        f'{len(db_loc)} database locations; '
-                        f'{len(db_format)} database formats')
-    logging.error(msg='Database names, locations, formats must be in lists of '
-                      'equal lengths.')
-    exit(1)
 
 # Set up logger
 # @TODO Generate unique log file names for each run?
@@ -61,13 +32,15 @@ try:
         config = yaml.load(f, Loader=yaml.FullLoader)
         flags = config.get('flags', {})
         fileIO = config.get('fileIO', {})
-        project = config.get('project', {})
+        proj_params = config.get('project_parameters', {})
+        foreground = config.get('foreground_db', {})
+        calcs = config.get('calculations', {})
 except IOError as err:
     logging.error(msg=f'Could not open {config_yaml_filename} for configuration.')
     exit(1)
 
 # Project setup
-proj = project.get('name')
+proj = proj_params.get('name')
 
 # if a new project is being created, instantiate it
 
@@ -86,51 +59,30 @@ logging.info(msg=f'Current project directory is {bw.projects.dir}')
 # Default setup step for biosphere database
 bw.bw2setup()
 
-# Imported database setup
+# Imported database check
 
-# @TODO Refactor the database import code to match the new command line args
 bw_db_list = [key for key, value in bw.databases.items()]
-logging.info(msg=f'{proj} databases are {bw_db_list} before import')
-
-# @NOTE Database name - do we need? Where does Brightway get it from?
+logging.info(msg=f'{proj} databases are {bw_db_list}')
 
 # do database importing and formatting, if there are databases to import
-if len(db_name) > 0:
-    # If db_create contains elements, then these are datbases that
-    # don't exist and must be imported and postprocessed.
-    for i in range(len(db_name)):
-        if db_name[i] not in bw_db_list:
-            logging.info(msg=f'Importing {db_name[i]} as {db_format[i]} from {db_loc[i]}')
-            # @TODO Add database format parameter for selecting the import method?
-            # Currently available: ecospold1, ecospold1-lcia, ecospold2, excel, exiobase, simapro CSV, and simapro CSV-lcia
-            try:
-                _imported_db = bw.SingleOutputEcospold2Importer(
-                    # @TODO do string formatting to raw
-                    db_loc[i],
-                    db_name[i]
-                )
-                if db_loc[i] in bw.databases:
-                    logging.info(msg=f'Successfully imported {db_name[i]}')
-                    logging.info(msg=f'Postprocessing {db_name[i]}')
-                    _imported_db.apply_strategies()
-                    _imported_db.statistics()
-                    _imported_db.write_database()
-                else:
-                    logging.warning(msg=f'Failed to import {db_name[i]}')
-            except AssertionError as err:
-                logging.error(msg=f'Brightway: {err}')
+db_names = proj_params.get('include_databases')
+if len(db_names) > 0:
+    missing = []
+    # If db_names contains database names, check that each of these is
+    # imported before proceeding
+    for i in range(len(db_names)):
+        if db_names[i] not in bw_db_list:
+            missing.append(db_names[i])
 
+    if len(missing) > 0:
+        logging.error(msg=f'{missing} must be imported before proceeding')
+        exit(1)
 
-    bw_db_list = [key for key, value in bw.databases]
-
-    logging.info(msg=f'{proj} databases are {bw_db_list} after import')
 else:
-    logging.info(msg='No new databases to add')
+    logging.info(msg=f'No databases specified: using {bw_db_list}')
 
 
-# Activity and exchange editing
-
-# @TODO: Log "before" status of database?
+# Custom foreground database setup
 
 # Import edit information from template
 try:
@@ -160,6 +112,7 @@ except ValueError:
     logging.warning(msg='Add Exchanges sheet not found')
     _add_exchanges = pd.DataFrame()
 
+# Fill in new
 
 # Create new activities if needed
 

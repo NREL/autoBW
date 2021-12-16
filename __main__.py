@@ -57,6 +57,7 @@ logging.info(msg=f'Current project name is {bw.projects.current}')
 logging.info(msg=f'Current project directory is {bw.projects.dir}')
 
 # Default setup step for biosphere database
+# This will only execute if the project is brand new
 bw.bw2setup()
 
 # Imported database check
@@ -83,6 +84,8 @@ else:
 
 
 # Custom foreground database setup
+
+# Create custom database if it does not exist
 
 # Import edit information from template
 try:
@@ -118,12 +121,13 @@ except ValueError:
 
 if not _create_activities.empty:
     # Error handling: If the activity already exists, throw a warning and move on
-    # @TODO List comprehension method for searching all databases?
-    _checkdb = bw.Database([key for key,value in bw.databases.items()][0])
+    # only search the database specified in the import template
+    _checkdb = _create_activities.database.unique().tolist()
     _duplicate_act = [
         act
-        for act in _checkdb
-        if act["name"] in _create_activities.Name.tolist()
+        for db in _checkdb
+        for act in bw.Database(db)
+        if act['name'] in _create_activities.activity_name.tolist()
            and act['type'] != 'emission'
     ]
 
@@ -131,12 +135,29 @@ if not _create_activities.empty:
         logging.warning(msg=f'Duplicate activities found: {_duplicate_act}')
         # @TODO Remove the duplicates from the _create_activities data frame
 
+    # Generate unique activity code with uuid
+    _create_activities.activity_code = [
+        uuid.uuid4().hex
+        for _ in range(len(_create_activities.activity_name))
+    ]
 
-    # After removing duplicate activities,
-    # Step 1: Generate unique code and store it in _create_activities.Code
-    _create_activities.Code = _create_activities.Name.replace(' ', '')
+    # Log the activities to be created
+    logging.info(msg=f'Creating activities: {_create_activities.activity_name},'
+                     f'{_create_activities.activity_code}')
 
-    #logging.info(msg=f'Creating activities: {_create_activities}')
+# Create the import data dictionary structure, populate with activity-level
+# information only. The exchange information will be added in the next step
+# @TODO Is it possible to vectorize to avoid loop?
+_import = {}
+for i in _create_activities.index:
+    _import[(_create_activities.database[i],
+             _create_activities.activity_code[i])] = \
+        {
+            "name": _create_activities.activity_name[i],
+            "unit": _create_activities.reference_product_unit[i],
+            "location": _create_activities.location[i],
+            "exchanges": []
+        }
 
 
 if not _delete_exchanges.empty:
@@ -145,11 +166,31 @@ if not _delete_exchanges.empty:
         # If the activity does not exist
         # If the exchange in the activity does not exist
 
+pdb.set_trace()
+# Add exchanges to existing activities
 if not _add_exchanges.empty:
-    pass
-    # Add exchanges to existing activities
-        # If the activity does not exist
-        # If the exchange already exists
+
+    # Fill in the activity_code column with values stored in _create_activities
+    _add_exchanges = _add_exchanges.merge(_create_activities,on=['database','activity_name','location'])
+    # @TODO Check if the activity does not exist in the specified database
+    #for i in _add_exchanges[['database','activity_name']].drop_duplicates().index:
+    #    _add_exchanges.loc[i]
+
+    # @TODO Check if the exchange already exists for the specified activity
+
+    # If the activity exists and the exchange does not, append the exchange
+    # data to the "exchanges" list of dicts under the relevant activity
+    for i in _add_exchanges.index:
+        _import[
+            (_add_exchanges.database[i],
+             _add_exchanges.activity_code[i])
+        ]['exchanges'].append(
+            {
+                "amount": _add_exchanges.amount[i],
+                "input": _add_exchanges.exchange[i],
+                "type": 'Technosphere'
+            }
+        )
 
 # @TODO: Log "after" status and record changes made
 

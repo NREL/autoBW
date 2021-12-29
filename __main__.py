@@ -3,8 +3,10 @@ import os
 import yaml
 import logging
 import uuid
+import time
 
 import brightway2 as bw
+from bw2data.validate import db_validator
 import pandas as pd
 
 import pdb
@@ -12,45 +14,54 @@ import pdb
 # set up arguments for command line running
 parser = argparse.ArgumentParser(description='Execute automatic Brightway LCIA')
 parser.add_argument('--data', help='Path to data directory.')
-parser.add_argument('--config', help='Name of local config file.')
+parser.add_argument('--bwconfig', help='Name of local Brightway config file.')
+parser.add_argument('--caseconfig', help='Name of local case study config file.')
 
 # Set up logger
-# @TODO Generate unique log file names for each run?
 logging.basicConfig(
     filename=os.path.join(
         parser.parse_args().data,
-        'autobw.log'
+        f'autobw-{time.time()}.log'
     ),
     level=logging.INFO
 )
 
 # read in config (YAML) file with error handling; get variable groups
-config_yaml_filename = os.path.join(parser.parse_args().data,
-                                    parser.parse_args().config)
+bwconfig_filename = os.path.join(parser.parse_args().data,
+                                    parser.parse_args().bwconfig)
+caseconfig_filename = os.path.join(parser.parse_args().data,
+                                   parser.parse_args().caseconfig)
 try:
-    with open(config_yaml_filename, 'r') as f:
-        config = yaml.load(f, Loader=yaml.FullLoader)
-        flags = config.get('flags', {})
-        fileIO = config.get('fileIO', {})
-        proj_params = config.get('project_parameters', {})
-        foreground = config.get('foreground_db', {})
-        calcs = config.get('calculations', {})
+    with open(bwconfig_filename, 'r') as f:
+        bwconfig = yaml.load(f, Loader=yaml.FullLoader)
+        flags = bwconfig.get('flags', {})
+        fileIO = bwconfig.get('fileIO', {})
 except IOError as err:
-    logging.error(msg=f'Could not open {config_yaml_filename} for configuration.')
+    logging.error(msg=f'Could not open {bwconfig_filename} for configuration.')
+    exit(1)
+
+try:
+    with open(caseconfig_filename, 'r') as f:
+        caseconfig = yaml.load(f, Loader=yaml.FullLoader)
+        foreground = caseconfig.get('foreground_db', {})
+        calcs = caseconfig.get('calculations', {})
+        proj_params = caseconfig.get('project_parameters', {})
+except IOError as err:
+    logging.error(msg=f'Could not open {caseconfig_filename} for configuration.')
     exit(1)
 
 # Project setup
-proj = proj_params.get('name')
+prj = proj_params.get('name')
 
 # if a new project is being created, instantiate it
 
 # If the project already exists, throw an error.
-if flags.get('create_new_project') and proj in list(bw.projects):
-    logging.error(msg=f'Project {proj} already exists.')
+if flags.get('create_new_project') and prj in list(bw.projects):
+    logging.error(msg=f'Project {prj} already exists.')
     exit(1)
 
 # Project setup
-bw.projects.set_current(proj)
+bw.projects.set_current(prj)
 
 # Log current project name and directory
 logging.info(msg=f'Current project name is {bw.projects.current}')
@@ -63,7 +74,7 @@ bw.bw2setup()
 # Imported database check
 
 bw_db_list = [key for key, value in bw.databases.items()]
-logging.info(msg=f'{proj} databases are {bw_db_list}')
+logging.info(msg=f'{prj} databases are {bw_db_list}')
 
 # do database importing and formatting, if there are databases to import
 db_names = proj_params.get('include_databases')
@@ -83,14 +94,20 @@ else:
     logging.info(msg=f'No databases specified: using {bw_db_list}')
 
 
-# Custom foreground database setup
+# Create foreground database from imported Excel data
 
-# Create custom database if it does not exist
+# Check list of existing databases against the databases to be created
+# If there is overlap, then perform checks for duplicate activities/exchanges
 
 # Import edit information from template
+fg_db_file = os.path.join(
+    fileIO.get('data_directory'),
+    foreground.get('fg_db_import')
+)
+
 try:
     _create_activities = pd.read_excel(
-        io=os.path.join(fileIO.get('data_directory'),fileIO.get('db_edits')),
+        io=fg_db_file,
         sheet_name='Create Activities'
     )
 except ValueError:
@@ -99,7 +116,7 @@ except ValueError:
 
 try:
     _delete_exchanges = pd.read_excel(
-        io=os.path.join(fileIO.get('data_directory'),fileIO.get('db_edits')),
+        io=fg_db_file,
         sheet_name='Delete Exchanges'
     )
 except ValueError:
@@ -108,32 +125,30 @@ except ValueError:
 
 try:
     _add_exchanges = pd.read_excel(
-        io=os.path.join(fileIO.get('data_directory'),fileIO.get('db_edits')),
+        io=fg_db_file,
         sheet_name='Add Exchanges'
     )
 except ValueError:
     logging.warning(msg='Add Exchanges sheet not found')
     _add_exchanges = pd.DataFrame()
 
-# Fill in new
 
-# Create new activities if needed
-
+# Add activities to foreground database(s)
 if not _create_activities.empty:
-    # Error handling: If the activity already exists, throw a warning and move on
-    # only search the database specified in the import template
-    _checkdb = _create_activities.database.unique().tolist()
-    _duplicate_act = [
-        act
-        for db in _checkdb
-        for act in bw.Database(db)
-        if act['name'] in _create_activities.activity_name.tolist()
-           and act['type'] != 'emission'
-    ]
+    # Find and delete any foreground databases with the same name as in the
+    # import template.
+    # Get list of foreground databases to be created.
+    _fg_db = _create_activities.database.unique().tolist()
 
-    if len(_duplicate_act) > 0:
-        logging.warning(msg=f'Duplicate activities found: {_duplicate_act}')
-        # @TODO Remove the duplicates from the _create_activities data frame
+    # Identify foreground databases that already exist.
+    for old in _fg_db:
+        # Remove the existing (old) foreground databases
+        if old in bw_db_list:
+            logging.warning(msg=f"Deleting existing foreground database {old}")
+            del bw.databases[old]
+
+    bw_db_list = [key for key, value in bw.databases.items()]
+    logging.info(msg=f'{prj} databases are {bw_db_list}')
 
     # Generate unique activity code with uuid
     _create_activities.activity_code = [
@@ -141,13 +156,16 @@ if not _create_activities.empty:
         for _ in range(len(_create_activities.activity_name))
     ]
 
-    # Log the activities to be created
-    logging.info(msg=f'Creating activities: {_create_activities.activity_name},'
-                     f'{_create_activities.activity_code}')
+    # Log the activities to be created and their newly assigned codes
+    logging.info(msg=f'Creating activities: {_create_activities.activity_name.values.tolist()}')
+    logging.info(msg=f'Creating activity codes: {_create_activities.activity_code.values.tolist()}')
+else:
+    logging.info(msg='No activities to create')
 
 # Create the import data dictionary structure, populate with activity-level
-# information only. The exchange information will be added in the next step
+# information only. The exchange information will be added in the next step.
 # @TODO Is it possible to vectorize to avoid loop?
+# @TODO Will this work if _create_activities is empty? Does it matter?
 _import = {}
 for i in _create_activities.index:
     _import[(_create_activities.database[i],
@@ -160,26 +178,24 @@ for i in _create_activities.index:
         }
 
 
-if not _delete_exchanges.empty:
-    pass
-    # Delete exchanges from existing activities
-        # If the activity does not exist
-        # If the exchange in the activity does not exist
-
-pdb.set_trace()
 # Add exchanges to existing activities
 if not _add_exchanges.empty:
+    # If activity_names listed under Add Exchanges are not also listed under
+    # Create Activities, throw an error
+    _missing_acts = [
+        _
+        for _ in _add_exchanges.activity_name.unique()
+        if _ not in _create_activities.activity_name.unique()
+    ]
+    if _missing_acts:
+        logging.error(msg=f'Add Exchanges: Error in activity_names {_missing_acts}')
+        exit(1)
 
-    # Fill in the activity_code column with values stored in _create_activities
+    # Fill in the code column with values stored in _create_activities
     _add_exchanges = _add_exchanges.merge(_create_activities,on=['database','activity_name','location'])
-    # @TODO Check if the activity does not exist in the specified database
-    #for i in _add_exchanges[['database','activity_name']].drop_duplicates().index:
-    #    _add_exchanges.loc[i]
-
-    # @TODO Check if the exchange already exists for the specified activity
-
-    # If the activity exists and the exchange does not, append the exchange
-    # data to the "exchanges" list of dicts under the relevant activity
+    pdb.set_trace()
+    # Append the exchange data to the "exchanges" list of dicts under the
+    # relevant activity
     for i in _add_exchanges.index:
         _import[
             (_add_exchanges.database[i],
@@ -187,10 +203,20 @@ if not _add_exchanges.empty:
         ]['exchanges'].append(
             {
                 "amount": _add_exchanges.amount[i],
-                "input": _add_exchanges.exchange[i],
+                "input": (_add_exchanges.exchange[i], _add_exchanges.exchange_code[i]),
                 "type": 'Technosphere'
             }
         )
+pdb.set_trace()
+if not _delete_exchanges.empty:
+    pass
+    # Delete exchanges from existing activities
+        # If the activity does not exist
+        # If the exchange in the activity does not exist
+
+# Validate data before linking or saving
+logging.debug(msg=f'Foreground database to import: {_import}')
+db_validator(_import)
 
 # @TODO: Log "after" status and record changes made
 

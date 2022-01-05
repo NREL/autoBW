@@ -254,6 +254,46 @@ class Sync:
 
         self.conn.commit()
 
+    def get_remote_activity_version(self, key: str, database: str) -> str:
+        """
+        Get remote activity version for <key> in <database>.
+        :param key: [str] activity key
+        :param database: [str] database name
+        :return: [str] activity version
+        """
+
+        sql = f"""SELECT "version" FROM "{self.schema}"."activities" WHERE "key" = %(key)s
+         AND "database" = %(database)s;"""
+        with self.conn.cursor() as cur:
+            cur.execute(sql, {'key': key, 'database': database})
+            try:
+                version_activity_remote = cur.fetchone()[0]
+            except TypeError:
+                version_activity_remote = None
+
+        return version_activity_remote
+
+    def get_remote_exchange_version(self, key: str, input: str) -> str:
+        """
+        Get remote exchange version for <key> and <input>.
+        :param key: [str] activity key
+        :param input: [str] exchange key
+        :return: [str] exchange version
+        """
+
+        sql_exchange_version = f"""SELECT "version" FROM "{self.schema}"."exchange"
+         WHERE "key" = %(key)s AND "input" = %(input)s;"""
+
+        with self.conn.cursor() as cur:
+            cur.execute(sql_exchange_version, {'key': key, 'input': input})
+
+            try:
+                version_exchange_remote = cur.fetchone()[0]
+            except TypeError:
+                version_exchange_remote = None
+
+        return version_exchange_remote
+
     def add_remote_activity(self, activity: proxies.Activity):
         """
         Add <activity> to <self.schema>.activity and <self.schema>.activity_database
@@ -272,14 +312,8 @@ class Sync:
         self.add_remote_database(database=database)
 
         # get activity version
-        sql_version = f"""SELECT "version" FROM "{self.schema}"."activities" WHERE "key" = %(key)s
-         AND "database" = %(database)s;"""
-        with self.conn.cursor() as cur:
-            cur.execute(sql_version, {'key': key, 'database': self.database.name})
-            try:
-                version_activity_remote = cur.fetchone()[0]
-            except TypeError:
-                version_activity_remote = None
+        version_activity_remote = self.get_remote_activity_version(key=key,
+                                                                   database=self.database.name)
 
         kvals_activity = {'key': key,
                           'name': activity.get('name') or key,
@@ -336,16 +370,7 @@ class Sync:
                      }
 
             # get exchange version
-            sql_exchange_version = f"""SELECT "version" FROM "{self.schema}"."exchange"
-             WHERE "key" = %(key)s AND "input" = %(input)s;"""
-
-            with self.conn.cursor() as cur:
-                cur.execute(sql_exchange_version, kvals)
-
-                try:
-                    version_exchange_remote = cur.fetchone()[0]
-                except TypeError:
-                    version_exchange_remote = None
+            version_exchange_remote = self.get_remote_exchange_version(key=key, input=exchange_key)
 
             if version_exchange_remote is None:
                 self.add_remote_exchange(exchange=kvals)

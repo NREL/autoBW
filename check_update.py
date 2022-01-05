@@ -11,7 +11,8 @@ if __name__ == '__main__':
 
     with psycopg2.connect(host='walter.nrel.gov', dbname='em_lca') as conn:
         sql = """SELECT "key", "version" FROM "em_lca"."activity"
-         WHERE "key" IN ('1', '2', '7', 'Fuel production', 'Electricity production', 'Carbon dioxide');"""
+         WHERE "key" IN ('1', '2', '7', 'Fuel production', 'Electricity production',
+          'Carbon dioxide');"""
 
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute(sql)
@@ -52,7 +53,8 @@ if __name__ == '__main__':
                 raise
         else:
             for exchange in activity.exchanges():
-                local_exchanges.append({"key": exchange.input[1], "version": exchange.get("version")})
+                local_exchanges.append({"key": exchange.input[1],
+                                        "version": exchange.get("version")})
 
         print(f'\tlocal: {local_exchanges}')
         sql = """SELECT "input", "version" FROM "em_lca"."exchange" WHERE "key" = %(key)s;"""

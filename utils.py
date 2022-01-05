@@ -1,3 +1,5 @@
+"""Utility functions"""
+
 from bw2data.backends.peewee import proxies
 
 

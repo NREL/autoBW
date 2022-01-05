@@ -449,8 +449,8 @@ class Sync():
 
             try:
                 assert key != exchange_key
-            except AssertionError:
-                raise ValueError(f"activity {key} has itself as an exchange")
+            except AssertionError as e:
+                raise ValueError(f"activity {key} has itself as an exchange") from e
 
             # if self.local_activity_exists(key=exchange_key):
             #     old_exchange_activity = self.database.get(exchange_key)
@@ -462,8 +462,8 @@ class Sync():
 
                 try:
                     self.add_local_activity(activity=exchange_activity)
-                except RecursionError:
-                    raise Exception(f"activity {key} has itself as an exchange")
+                except RecursionError as e:
+                    raise Exception(f"activity {key} has itself as an exchange") from e
 
             if not self.local_exchange_exists(exchange=exchange, key=key):
                 new_exchange = _activity.new_exchange(**exchange)

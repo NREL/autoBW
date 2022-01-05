@@ -262,14 +262,14 @@ class Sync():
         """
 
         try:
-            db, key = activity.key
+            database, key = activity.key
         except AttributeError:
-            db, key = activity.get('input')
-            activity = bw.Database(db).get(key)
+            database, key = activity.get('input')
+            activity = bw.Database(database).get(key)
 
         validate_activity(activity)
 
-        self.add_remote_database(database=db)
+        self.add_remote_database(database=database)
 
         # get activity version
         sql_version = f"""SELECT "version" FROM "{self.schema}"."activities" WHERE "key" = %(key)s
@@ -298,7 +298,7 @@ class Sync():
             sql_activity_database = f"""INSERT INTO "{self.schema}"."activity_database"
             ("key", "database") VALUES (%(key)s, %(database)s);"""
             kvals_activity_database = {'key': key,
-                                       'database': db
+                                       'database': database
                                        }
 
             with self.conn.cursor() as cur:
@@ -324,7 +324,7 @@ class Sync():
             version_exchange_local = exchange.get('version')
 
             if not self.remote_activity_exists(key=exchange_key,
-                                               db=db,
+                                               db=database,
                                                version=version_exchange_local):
                 # add remote activity
                 self.add_remote_activity(exchange)

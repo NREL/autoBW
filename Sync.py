@@ -45,7 +45,8 @@ class Sync(object):
         :return: list
         """
 
-        sql = f"""SELECT "key", "name", "unit", "location", "type", "version", COALESCE("comment", '') AS "comment"
+        sql = f"""SELECT "key", "name", "unit", "location", "type", "version", """\
+              """COALESCE("comment", '') AS "comment"
          FROM "{self.schema}"."activities" WHERE "database" = %(database)s;"""
 
         with self.conn.cursor(cursor_factory=DictCursor) as cur:
@@ -60,7 +61,8 @@ class Sync(object):
         :return: dict
         """
 
-        sql = f"""SELECT "key", "name", "unit", "location", "type", "version", COALESCE("comment", '') AS "comment"
+        sql = f"""SELECT "key", "name", "unit", "location", "type", "version", """\
+              """COALESCE("comment", '') AS "comment"
          FROM "{self.schema}"."activity" WHERE "key" = %(key)s;"""
 
         with self.conn.cursor(cursor_factory=DictCursor) as cur:
@@ -101,7 +103,8 @@ class Sync(object):
         :return: list
         """
 
-        sql = f"""SELECT "amount", "input", "uncertainty_type", COALESCE("comment", '') AS "comment", "version"
+        sql = f"""SELECT "amount", "input", "uncertainty_type", 
+        COALESCE("comment", '') AS "comment", "version"
          FROM "{self.schema}"."exchange" WHERE "key" = %(key)s;"""
 
         with self.conn.cursor(cursor_factory=DictCursor) as cur:
@@ -128,7 +131,8 @@ class Sync(object):
         :param database: str database name
         :return: bool
         """
-        sql = f"""SELECT COUNT("database") FROM "{self.schema}"."database" WHERE "database" = %(database)s;"""
+        sql = f"""SELECT COUNT("database") FROM "{self.schema}"."database" 
+        WHERE "database" = %(database)s;"""
 
         with self.conn.cursor() as cur:
             cur.execute(sql, {'database': database})
@@ -143,7 +147,8 @@ class Sync(object):
         :param version int activity version
         :return: bool
         """
-        sql = f"""SELECT "version" FROM "{self.schema}"."activities" WHERE "key" = %(key)s and "database" = %(db)s;"""
+        sql = f"""SELECT "version" FROM "{self.schema}"."activities" 
+        WHERE "key" = %(key)s AND "database" = %(db)s;"""
 
         with self.conn.cursor() as cur:
             cur.execute(sql, {'key': key, 'db': db})
@@ -161,7 +166,8 @@ class Sync(object):
         :param exchange: dict exchange kvals
         :return: bool
         """
-        sql = f"""SELECT COUNT(*) FROM "{self.schema}"."exchange" WHERE "key" = %(key)s AND "amount" = %(amount)s AND 
+        sql = f"""SELECT COUNT(*) FROM "{self.schema}"."exchange" 
+        WHERE "key" = %(key)s AND "amount" = %(amount)s AND 
         "input" = %(input)s AND "uncertainty_type" = %(uncertainty_type)s;"""
 
         with self.conn.cursor() as cur:
@@ -225,8 +231,9 @@ class Sync(object):
         :return:
         """
 
-        sql = f"""UPDATE "{self.schema}"."exchange" SET "amount" = %(local_amount)s, "type" = %(local_type)s,
-         "uncertainty_type" = %(local_uncertainty_type)s, "comment" = %(local_comment)s, "version" = %(local_version)s
+        sql = f"""UPDATE "{self.schema}"."exchange" SET "amount" = %(local_amount)s, 
+        "type" = %(local_type)s, "uncertainty_type" = %(local_uncertainty_type)s, 
+        "comment" = %(local_comment)s, "version" = %(local_version)s
           WHERE "key" = %(activity_key)s AND "input" = %(exchange_key)s"""
 
         kvals = {'local_amount': local_exchange.get('amount'),
@@ -280,12 +287,12 @@ class Sync(object):
                           }
 
         if version_activity_remote is None:
-            sql_activity = f"""INSERT INTO "{self.schema}"."activity" ("key", "name", "location", "type", "unit", 
-            "version", "comment") VALUES (%(key)s, %(name)s, %(location)s, %(type)s, %(unit)s, %(version)s,
-             %(comment)s);"""
+            sql_activity = f"""INSERT INTO "{self.schema}"."activity" ("key", "name", "location", 
+            "type", "unit", "version", "comment") VALUES (%(key)s, %(name)s, %(location)s, %(type)s,
+             %(unit)s, %(version)s, %(comment)s);"""
 
-            sql_activity_database = f"""INSERT INTO "{self.schema}"."activity_database" ("key", "database")
-            VALUES (%(key)s, %(database)s);"""
+            sql_activity_database = f"""INSERT INTO "{self.schema}"."activity_database"
+            ("key", "database") VALUES (%(key)s, %(database)s);"""
             kvals_activity_database = {'key': key,
                                        'database': db
                                        }
@@ -294,9 +301,9 @@ class Sync(object):
                 cur.execute(sql_activity, kvals_activity)
                 cur.execute(sql_activity_database, kvals_activity_database)
         elif version_activity_remote < kvals_activity['version']:
-            sql_activity = f"""UPDATE "{self.schema}"."activity" SET "name" = %(name)s, "location" = %(location)s,
-            "type" = %(type)s, "unit" = %(unit)s, "version" = %(version)s, "comment" = %(comment)s
-             WHERE "key" = %(key)s;"""
+            sql_activity = f"""UPDATE "{self.schema}"."activity" SET "name" = %(name)s,
+             "location" = %(location)s, "type" = %(type)s, "unit" = %(unit)s, 
+             "version" = %(version)s, "comment" = %(comment)s WHERE "key" = %(key)s;"""
 
             with self.conn.cursor() as cur:
                 cur.execute(sql_activity, kvals_activity)
@@ -304,14 +311,17 @@ class Sync(object):
             kvals = {'key': kvals_activity['key'],
                      'version': kvals_activity['version'],
                      'remote_version': version_activity_remote}
-            LOGGER.warning('local activity %(key)s version %(version)s is superseded by remote version'
+            LOGGER.warning('local activity %(key)s version %(version)s is'
+                           ' superseded by remote version'
                            ' %(remote_version)s' % kvals)
 
         for exchange in activity.exchanges():
             exchange_db, exchange_key = exchange.get('input')
             version_exchange_local = exchange.get('version')
 
-            if not self.remote_activity_exists(key=exchange_key, db=db, version=version_exchange_local):
+            if not self.remote_activity_exists(key=exchange_key,
+                                               db=db,
+                                               version=version_exchange_local):
                 # add remote activity
                 self.add_remote_activity(exchange)
 
@@ -342,8 +352,9 @@ class Sync(object):
                                   'exchange_key': exchange_key,
                                   'local_version': version_exchange_local,
                                   'remote_version': version_exchange_remote}
-                LOGGER.warning('local exchange between %(activity_key)s and %(exchange_key)s with version'
-                               ' %(local_version)s is superseded by remote version %(remote_version)s'
+                LOGGER.warning('local exchange between %(activity_key)s and %(exchange_key)s with'
+                               ' version %(local_version)s is superseded by remote version '
+                               '%(remote_version)s'
                                % kvals_exchange)
             else:
                 continue
@@ -392,13 +403,15 @@ class Sync(object):
         :return:
         """
 
-        sql = f"""INSERT INTO "{self.schema}"."exchange" ("key", "amount", "input", "uncertainty_type") VALUES
-         (%(key)s, %(amount)s, %(input)s, %(uncertainty_type)s);"""
+        sql = f"""INSERT INTO "{self.schema}"."exchange" ("key", "amount", "input",
+         "uncertainty_type") VALUES (%(key)s, %(amount)s, %(input)s, %(uncertainty_type)s);"""
+
+        u_type = exchange.get('uncertainty_type') or Sync.DEFAULT_UNCERTAINTY_TYPE
 
         kvals = {'key': exchange.get('key'),
                  'amount': exchange.get('amount'),
                  'input': exchange.get('input'),
-                 'uncertainty_type': exchange.get('uncertainty_type') or Sync.DEFAULT_UNCERTAINTY_TYPE
+                 'uncertainty_type': u_type
                  }
 
         with self.conn.cursor(cursor_factory=DictCursor) as cur:
@@ -463,8 +476,9 @@ class Sync(object):
                             new_exchange = _activity.new_exchange(**exchange)
                             new_exchange.save()
                         elif old_exchange_version > new_exchange_version:
-                            LOGGER.warning(f'remote exchange {exchange_key} for activity {_activity.key} version '
-                                           f'{new_exchange_version} is superseded by local exchange version'
+                            LOGGER.warning(f'remote exchange {exchange_key} for activity '
+                                           f'{_activity.key} version {new_exchange_version} is'
+                                           f' superseded by local exchange version'
                                            f' {old_exchange_version}')
                         else:
                             pass

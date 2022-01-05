@@ -141,10 +141,10 @@ class Sync:
 
             return bool(cur.fetchone()[0])
 
-    def remote_activity_exists(self, db: str, key: str, version: int = None) -> bool:
+    def remote_activity_exists(self, database: str, key: str, version: int = None) -> bool:
         """
         Check if <key> exists for database <db> and <version) in <self.schema>.activity
-        :param db: str database name
+        :param database: str database name
         :param key: str activity code
         :param version int activity version
         :return: bool
@@ -153,7 +153,7 @@ class Sync:
          WHERE "key" = %(key)s AND "database" = %(db)s;"""
 
         with self.conn.cursor() as cur:
-            cur.execute(sql, {'key': key, 'db': db})
+            cur.execute(sql, {'key': key, 'db': database})
 
             remote_version = cur.fetchone()
 
@@ -324,7 +324,7 @@ class Sync:
             version_exchange_local = exchange.get('version')
 
             if not self.remote_activity_exists(key=exchange_key,
-                                               db=database,
+                                               database=database,
                                                version=version_exchange_local):
                 # add remote activity
                 self.add_remote_activity(exchange)

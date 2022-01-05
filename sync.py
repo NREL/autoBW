@@ -21,7 +21,7 @@ LOGGER.setLevel(logging.DEBUG)
 # @TODO: need methods to handle deleted exchanges and activities
 
 
-class Sync():
+class Sync:
     """
     A synchronization class for local and remote brightway2 databases.
     """

@@ -47,9 +47,9 @@ class Sync():
         :return: list
         """
 
-        sql = f"""SELECT "key", "name", "unit", "location", "type", "version", """\
-              """COALESCE("comment", '') AS "comment"
-         FROM "{self.schema}"."activities" WHERE "database" = %(database)s;"""
+        sql = """SELECT "key", "name", "unit", "location", "type", "version",
+         COALESCE("comment", '') AS "comment" FROM "{self.schema}"."activities"
+         WHERE "database" = %(database)s;"""
 
         with self.conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute(sql, {'database': self.database.name})
@@ -63,8 +63,8 @@ class Sync():
         :return: dict
         """
 
-        sql = f"""SELECT "key", "name", "unit", "location", "type", "version", """\
-              """COALESCE("comment", '') AS "comment"
+        sql = f"""SELECT "key", "name", "unit", "location", "type", "version",
+         COALESCE("comment", '') AS "comment"
          FROM "{self.schema}"."activity" WHERE "key" = %(key)s;"""
 
         with self.conn.cursor(cursor_factory=DictCursor) as cur:

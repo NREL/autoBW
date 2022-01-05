@@ -260,7 +260,7 @@ class Sync():
         :param activity: brightway Activity
         :return:
         """
-        LOGGER.debug(activity)
+
         try:
             db, key = activity.key
         except AttributeError:
@@ -483,10 +483,15 @@ class Sync():
                             new_exchange = _activity.new_exchange(**exchange)
                             new_exchange.save()
                         elif old_exchange_version > new_exchange_version:
-                            LOGGER.warning(f'remote exchange {exchange_key} for activity '
-                                           f'{_activity.key} version {new_exchange_version} is'
-                                           f' superseded by local exchange version'
-                                           f' {old_exchange_version}')
+                            kvals = {'exchange_key': exchange_key,
+                                     '_activity_key': _activity.key,
+                                     'new_exchange_version': new_exchange_version,
+                                     'old_exchange_version': old_exchange_version
+                                     }
+                            LOGGER.warning('remote exchange %(exchange_key)s for activity '
+                                           '%(_activity_key)s version %(new_exchange_version)s is'
+                                           ' superseded by local exchange version'
+                                           ' %(old_exchange_version)s' % kvals)
                         else:
                             pass
 
@@ -595,9 +600,15 @@ if __name__ == '__main__':
 
     LOGGER.debug('before sync')
     for activity in db:
-        LOGGER.debug(f"{activity} [version: {activity['version']}]")
+        kvals = {'activity': activity,
+                 'version': activity['version']
+                 }
+        LOGGER.debug('%(activity)s [version: %(version)s]' % kvals)
         for exchange in activity.exchanges():
-            LOGGER.debug(f"\t {exchange} [version: {exchange['version']}]")
+            kvals = {'exchange': exchange,
+                     'version': exchange['version']
+                     }
+            LOGGER.debug('\t %(exchange)s [version: (version)s]' % kvals)
 
     sync = Sync(conn=conn, database=db, schema='em_lca')
 
@@ -605,6 +616,13 @@ if __name__ == '__main__':
 
     LOGGER.debug('\nafter sync')
     for activity in db:
-        LOGGER.debug(f"{activity} [version: {activity['version']}]")
+        kvals = {'activity': activity,
+                 'version': activity['version']
+                 }
+
+        LOGGER.debug('%(activity)s [version: %(version)s]')
         for exchange in activity.exchanges():
-            LOGGER.debug(f"\t {exchange} [version: {exchange['version']}]")
+            kvals = {'exchange': exchange,
+                     'version': exchange['version']
+                     }
+            LOGGER.debug('\t %(exchange)s [version: %(version)s]')

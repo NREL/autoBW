@@ -1,3 +1,5 @@
+"""Script to update local and remote activities for testing Synch"""
+
 import brightway2 as bw
 import psycopg2
 

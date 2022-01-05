@@ -1,3 +1,5 @@
+"""Script to report activity updates for testing Sync"""
+
 import brightway2 as bw
 import psycopg2
 from pandas import DataFrame

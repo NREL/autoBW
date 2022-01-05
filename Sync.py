@@ -320,7 +320,7 @@ class Sync():
                            ' %(remote_version)s' % kvals)
 
         for exchange in activity.exchanges():
-            exchange_db, exchange_key = exchange.get('input')
+            _, exchange_key = exchange.get('input')
             version_exchange_local = exchange.get('version')
 
             if not self.remote_activity_exists(key=exchange_key,

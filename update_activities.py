@@ -32,10 +32,10 @@ if __name__ == '__main__':
 
     # update and add remote activities
     with psycopg2.connect(host='walter.nrel.gov', dbname='em_lca') as conn:
-        sql_update = """UPDATE "em_lca"."activity" SET "version" = 1 
-        WHERE "key" IN ('Fuel production', 'Electricity production')"""
+        sql_update = """UPDATE "em_lca"."activity" SET "version" = 1
+         WHERE "key" IN ('Fuel production', 'Electricity production')"""
 
-        sql_insert_activity = """INSERT INTO "em_lca"."activity" ("key", "name", "location", "type", "unit", "version", "comment") 
+        sql_insert_activity = """INSERT INTO "em_lca"."activity" ("key", "name", "location", "type", "unit", "version", "comment")
          VALUES (7, 'production 2', 'GLO', 'production', 'kilogram', 0, 'production activity 2');"""
 
         sql_insert_activity_database = """INSERT INTO "em_lca"."activity_database" ("key", "database")

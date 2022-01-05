@@ -10,8 +10,8 @@ if __name__ == '__main__':
     db = bw.Database('EM_LCA_0')
 
     with psycopg2.connect(host='walter.nrel.gov', dbname='em_lca') as conn:
-        sql = """SELECT "key", "version" FROM "em_lca"."activity"  
-        WHERE "key" IN ('1', '2', '7', 'Fuel production', 'Electricity production', 'Carbon dioxide');"""
+        sql = """SELECT "key", "version" FROM "em_lca"."activity"
+         WHERE "key" IN ('1', '2', '7', 'Fuel production', 'Electricity production', 'Carbon dioxide');"""
 
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute(sql)

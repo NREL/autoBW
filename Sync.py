@@ -133,8 +133,8 @@ class Sync(object):
         :param database: str database name
         :return: bool
         """
-        sql = f"""SELECT COUNT("database") FROM "{self.schema}"."database" 
-        WHERE "database" = %(database)s;"""
+        sql = f"""SELECT COUNT("database") FROM "{self.schema}"."database"
+         WHERE "database" = %(database)s;"""
 
         with self.conn.cursor() as cur:
             cur.execute(sql, {'database': database})

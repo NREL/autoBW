@@ -158,9 +158,11 @@ class Sync():
             remote_version = cur.fetchone()
 
         if remote_version:
-            return remote_version[0] == version
+            _remove_version = remote_version[0] == version
         else:
-            return bool(remote_version)
+            _remote_version = bool(remote_version)
+
+        return _remote_version
 
     def remote_exchange_exists(self, exchange: dict) -> bool:
         """

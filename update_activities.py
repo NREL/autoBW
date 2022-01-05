@@ -34,20 +34,20 @@ if __name__ == '__main__':
 
     # update and add remote activities
     with psycopg2.connect(host='walter.nrel.gov', dbname='em_lca') as conn:
-        sql_update = """UPDATE "em_lca"."activity" SET "version" = 1
+        SQL_UPDATE = """UPDATE "em_lca"."activity" SET "version" = 1
          WHERE "key" IN ('Fuel production', 'Electricity production')"""
 
-        sql_insert_activity = """INSERT INTO "em_lca"."activity" ("key", "name", "location", "type",
+        SQL_INSERT_ACTIVITY = """INSERT INTO "em_lca"."activity" ("key", "name", "location", "type",
          "unit", "version", "comment") VALUES (7, 'production 2', 'GLO', 'production', 'kilogram',
           0, 'production activity 2');"""
 
-        sql_insert_activity_database = """INSERT INTO "em_lca"."activity_database"
+        SQL_INSERT_ACTIVITY_DATABASE = """INSERT INTO "em_lca"."activity_database"
          ("key", "database") VALUES (7, 'EM_LCA_0');"""
 
-        sql_update_exchange_version = """UPDATE "em_lca"."exchange" SET "version" = 1
+        SQL_UPDATE_EXCHANGE_VERSION = """UPDATE "em_lca"."exchange" SET "version" = 1
          WHERE "key" = '1' AND "input" = '2';"""
 
         with conn.cursor() as cur:
-            for sql in [sql_update, sql_insert_activity, sql_insert_activity_database,
-                        sql_update_exchange_version]:
+            for sql in [SQL_UPDATE, SQL_INSERT_ACTIVITY, SQL_INSERT_ACTIVITY_DATABASE,
+                        SQL_UPDATE_EXCHANGE_VERSION]:
                 cur.execute(sql)

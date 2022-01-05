@@ -12,12 +12,12 @@ if __name__ == '__main__':
     db = bw.Database('EM_LCA_0')
 
     with psycopg2.connect(host='walter.nrel.gov', dbname='em_lca') as conn:
-        sql = """SELECT "key", "version" FROM "em_lca"."activity"
+        SQL = """SELECT "key", "version" FROM "em_lca"."activity"
          WHERE "key" IN ('1', '2', '7', 'Fuel production', 'Electricity production',
           'Carbon dioxide');"""
 
         with conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute(sql)
+            cur.execute(SQL)
 
             versions = [dict(result) for result in cur.fetchall()]
 
@@ -59,9 +59,9 @@ if __name__ == '__main__':
                                         "version": exchange.get("version")})
 
         print(f'\tlocal: {local_exchanges}')
-        sql = """SELECT "input", "version" FROM "em_lca"."exchange" WHERE "key" = %(key)s;"""
+        SQL = """SELECT "input", "version" FROM "em_lca"."exchange" WHERE "key" = %(key)s;"""
         with psycopg2.connect(host='walter.nrel.gov', dbname='em_lca') as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
-                cur.execute(sql, {'key': key})
+                cur.execute(SQL, {'key': key})
                 remote_exchanges = [dict(res) for res in cur.fetchall()]
         print(f'\tremote: {remote_exchanges}')

@@ -317,7 +317,7 @@ class Sync():
                      'remote_version': version_activity_remote}
             LOGGER.warning('local activity %(key)s version %(version)s is'
                            ' superseded by remote version'
-                           ' %(remote_version)s' % kvals)
+                           ' %(remote_version)s', kvals)
 
         for exchange in activity.exchanges():
             _, exchange_key = exchange.get('input')
@@ -358,8 +358,7 @@ class Sync():
                                   'remote_version': version_exchange_remote}
                 LOGGER.warning('local exchange between %(activity_key)s and %(exchange_key)s with'
                                ' version %(local_version)s is superseded by remote version '
-                               '%(remote_version)s'
-                               % kvals_exchange)
+                               '%(remote_version)s', kvals_exchange)
             else:
                 continue
 
@@ -449,8 +448,8 @@ class Sync():
 
             try:
                 assert key != exchange_key
-            except AssertionError as e:
-                raise ValueError(f"activity {key} has itself as an exchange") from e
+            except AssertionError as matching_keys:
+                raise ValueError(f"activity {key} has itself as an exchange") from matching_keys
 
             # if self.local_activity_exists(key=exchange_key):
             #     old_exchange_activity = self.database.get(exchange_key)
@@ -462,8 +461,8 @@ class Sync():
 
                 try:
                     self.add_local_activity(activity=exchange_activity)
-                except RecursionError as e:
-                    raise Exception(f"activity {key} has itself as an exchange") from e
+                except RecursionError as recursion_key:
+                    raise Exception(f"activity {key} has itself as an exchange") from recursion_key
 
             if not self.local_exchange_exists(exchange=exchange, key=key):
                 new_exchange = _activity.new_exchange(**exchange)
@@ -491,7 +490,7 @@ class Sync():
                             LOGGER.warning('remote exchange %(exchange_key)s for activity '
                                            '%(_activity_key)s version %(new_exchange_version)s is'
                                            ' superseded by local exchange version'
-                                           ' %(old_exchange_version)s' % kvals)
+                                           ' %(old_exchange_version)s', kvals)
                         else:
                             pass
 
@@ -603,12 +602,12 @@ if __name__ == '__main__':
         kvals = {'activity': activity,
                  'version': activity['version']
                  }
-        LOGGER.debug('%(activity)s [version: %(version)s]' % kvals)
+        LOGGER.debug('%(activity)s [version: %(version)s]', kvals)
         for exchange in activity.exchanges():
             kvals = {'exchange': exchange,
                      'version': exchange['version']
                      }
-            LOGGER.debug('\t %(exchange)s [version: (version)s]' % kvals)
+            LOGGER.debug('\t %(exchange)s [version: (version)s]', kvals)
 
     sync = Sync(conn=conn, database=db, schema='em_lca')
 
@@ -620,9 +619,9 @@ if __name__ == '__main__':
                  'version': activity['version']
                  }
 
-        LOGGER.debug('%(activity)s [version: %(version)s]')
+        LOGGER.debug('%(activity)s [version: %(version)s]', kvals)
         for exchange in activity.exchanges():
             kvals = {'exchange': exchange,
                      'version': exchange['version']
                      }
-            LOGGER.debug('\t %(exchange)s [version: %(version)s]')
+            LOGGER.debug('\t %(exchange)s [version: %(version)s]', kvals)

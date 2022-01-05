@@ -1,3 +1,5 @@
+"""Syncing utility for Brightway2 databases"""
+
 import logging
 
 import brightway2 as bw

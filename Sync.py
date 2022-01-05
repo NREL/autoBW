@@ -519,76 +519,76 @@ if __name__ == '__main__':
 
     bw.projects.set_current('ethanol_LCA_test')
 
-    database = 'EM_LCA_0'
+    DATABASE = 'EM_LCA_0'
 
-    db = bw.Database(database)
+    db = bw.Database(DATABASE)
 
     if RESET_LOCAL_DB:
         db.write({
-            (database, "Electricity production"): {
+            (DATABASE, "Electricity production"): {
                 'name': 'Electricity production',
                 'type': 'production',
                 'location': 'GLO',
                 'unit': 'kWh',
                 'version': 0,
                 'exchanges': [{
-                    'input': (database, 'Fuel production'),
+                    'input': (DATABASE, 'Fuel production'),
                     'amount': 2,
                     'unit': 'kg',
                     'type': 'technosphere',
                     'version': 0
                 }, {
-                    'input': (database, 'Carbon dioxide'),
+                    'input': (DATABASE, 'Carbon dioxide'),
                     'amount': 1,
                     'unit': 'kg',
                     'type': 'biosphere',
                     'version': 0
                 }, {
-                    'input': (database, 'Sulphur dioxide'),
+                    'input': (DATABASE, 'Sulphur dioxide'),
                     'amount': 0.1,
                     'unit': 'kg',
                     'type': 'biosphere',
                     'version': 0
                 }]
             },
-            (database, 'Fuel production'): {
+            (DATABASE, 'Fuel production'): {
                 'name': 'Fuel production',
                 'type': 'production',
                 'location': 'GLO',
                 'unit': 'kg',
                 'version': 0,
                 'exchanges': [{
-                    'input': (database, 'Carbon dioxide'),
+                    'input': (DATABASE, 'Carbon dioxide'),
                     'amount': 10,
                     'unit': 'kg',
                     'type': 'biosphere',
                     'version': 0
                 }, {
-                    'input': (database, 'Sulphur dioxide'),
+                    'input': (DATABASE, 'Sulphur dioxide'),
                     'amount': 2,
                     'unit': 'kg',
                     'type': 'biosphere',
                     'version': 0
                 }, {
-                    'input': (database, 'Crude oil'),
+                    'input': (DATABASE, 'Crude oil'),
                     'amount': -50,
                     'unit': 'kg',
                     'type': 'biosphere',
                     'version': 0
                 }]
             },
-            (database, 'Carbon dioxide'): {'name': 'Carbon dioxide',
+            (DATABASE, 'Carbon dioxide'): {'name': 'Carbon dioxide',
                                            'type': 'biosphere',
                                            'location': 'GLO',
                                            'unit': 'kg',
                                            'version': 0
                                            },
-            (database, 'Sulphur dioxide'): {'name': 'Sulphur dioxide',
+            (DATABASE, 'Sulphur dioxide'): {'name': 'Sulphur dioxide',
                                             'location': 'GLO',
                                             'unit': 'kg',
                                             'type': 'biosphere',
                                             'version': 0},
-            (database, 'Crude oil'): {'name': 'Crude oil',
+            (DATABASE, 'Crude oil'): {'name': 'Crude oil',
                                       'location': 'GLO',
                                       'unit': 'kg',
                                       'type': 'biosphere',

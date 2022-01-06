@@ -86,11 +86,11 @@ class Sync:
         return activities
 
     @staticmethod
-    def get_local_exchanges(activity) -> list:
+    def get_local_exchanges(activity: proxies.Activity) -> list:
         """
         Collect exchanges for a local activity
-        :param activity: brightway2 activity object
-        :return: list
+        :param activity: [Activity] brightway2 activity
+        :return: [list]
         """
         exchanges = []
         for exchange in activity.exchanges():
@@ -294,18 +294,12 @@ class Sync:
 
         return version_exchange_remote
 
-    def insert_remote_activity(self, key: str, name: str, location: str, type: str, unit: str,
-                               version: str, comment: str) -> None:
+    def insert_remote_activity(self, key: str, activity: proxies.Activity) -> None:
         """
         Insert new activity into remote database.
 
         :param key: [str] activity key
-        :param name: [str] activity name
-        :param location: [str] activity location
-        :param type: [str] activity type
-        :param unit: [str] activity unit
-        :param version: [str] activity version
-        :param comment: [str] activity comments
+        :param activity: [Activity] activity to insert
         :return: [None]
         """
 
@@ -315,12 +309,12 @@ class Sync:
 
         kvals = {
             'key': key,
-            'name': name,
-            'location': location,
-            'type': type,
-            'unit': unit,
-            'version': version,
-            'comment': comment
+            'name': activity.get('name') or key,
+            'location': activity.get('location'),
+            'type': activity.get('type'),
+            'unit': activity.get('unit'),
+            'version': activity.get('version'),
+            'comment': activity.get('comment')
         }
 
         with self.conn.cursor() as cur:
@@ -344,18 +338,12 @@ class Sync:
         with self.conn.cursor() as cur:
             cur.execute(sql, kvals)
 
-    def update_remote_activity(self, key: str, name: str, location: str, type: str, unit: str, version: str,
-                               comment: str) -> None:
+    def update_remote_activity(self, key: str, activity: proxies.Activity) -> None:
         """
         Update activity <key> in remote database.
 
         :param key: [str] activity key
-        :param name: [str] activity name
-        :param location: [str] activity location
-        :param type: [str] activity type
-        :param unit: [str] activity unit
-        :param version: [str] activity version
-        :param comment: [str] activity comments
+        :param activity: [Activity] activity to update
         :return: [None]
         """
 
@@ -365,12 +353,12 @@ class Sync:
 
         kvals = {
             'key': key,
-            'name': name,
-            'location': location,
-            'type': type,
-            'unit': unit,
-            'version': version,
-            'comment': comment
+            'name': activity.get('name') or key,
+            'location': activity.get('location'),
+            'type': activity.get('type'),
+            'unit': activity.get('unit'),
+            'version': activity.get('version'),
+            'comment': activity.get('comment')
         }
 
         with self.conn.cursor() as cur:
@@ -400,12 +388,7 @@ class Sync:
         if version_activity_remote is None:
             self.insert_remote_activity(
                 key=key,
-                name=activity.get('name') or key,
-                location=activity.get('location'),
-                type=activity.get('type'),
-                unit=activity.get('unit'),
-                version=activity.get('version'),
-                comment=activity.get('comment')
+                activity=activity)
             )
 
             self.insert_activity_database(key=key, database=database)
@@ -528,11 +511,11 @@ class Sync:
 
         self.conn.commit()
 
-    def add_local_activity(self, activity: dict):
+    def add_local_activity(self, activity: dict) -> None:
         """
         Add <activity> to self.database
-        :param activity: dict
-        :return:
+        :param activity: [dict] activity dictionary
+        :return: [None]
         """
 
         key = activity.pop('key')

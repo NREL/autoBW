@@ -294,6 +294,88 @@ class Sync:
 
         return version_exchange_remote
 
+    def insert_remote_activity(self, key: str, name: str, location: str, type: str, unit: str,
+                               version: str, comment: str) -> None:
+        """
+        Insert new activity into remote database.
+
+        :param key: [str] activity key
+        :param name: [str] activity name
+        :param location: [str] activity location
+        :param type: [str] activity type
+        :param unit: [str] activity unit
+        :param version: [str] activity version
+        :param comment: [str] activity comments
+        :return: [None]
+        """
+
+        sql = f"""INSERT INTO "{self.schema}"."activity" ("key", "name", "location",
+         "type", "unit", "version", "comment") VALUES (%(key)s, %(name)s, %(location)s, 
+         %(type)s, %(unit)s, %(version)s, %(comment)s);"""
+
+        kvals = {
+            'key': key,
+            'name': name,
+            'location': location,
+            'type': type,
+            'unit': unit,
+            'version': version,
+            'comment': comment
+        }
+
+        with self.conn.cursor() as cur:
+            cur.execute(sql, kvals)
+            self.conn.commit()
+
+    def insert_activity_database(self, key: str, database: str) -> None:
+        """
+        Insert new activity - database pair into remote database.
+        :param key: [str] activity key
+        :param database: [str] database name
+        :return: [None]
+        """
+
+        sql = f"""INSERT INTO "{self.schema}"."activity_database"
+        ("key", "database") VALUES (%(key)s, %(database)s);"""
+
+        kvals = {'key': key,
+                 'database': database}
+
+        with self.conn.cursor() as cur:
+            cur.execute(sql, kvals)
+
+    def update_remote_activity(self, key: str, name: str, location: str, type: str, unit: str, version: str,
+                               comment: str) -> None:
+        """
+        Update activity <key> in remote database.
+
+        :param key: [str] activity key
+        :param name: [str] activity name
+        :param location: [str] activity location
+        :param type: [str] activity type
+        :param unit: [str] activity unit
+        :param version: [str] activity version
+        :param comment: [str] activity comments
+        :return: [None]
+        """
+
+        sql = f"""UPDATE "{self.schema}"."activity" SET "name" = %(name)s,
+         "location" = %(location)s, "type" = %(type)s, "unit" = %(unit)s, 
+         "version" = %(version)s, "comment" = %(comment)s WHERE "key" = %(key)s;"""
+
+        kvals = {
+            'key': key,
+            'name': name,
+            'location': location,
+            'type': type,
+            'unit': unit,
+            'version': version,
+            'comment': comment
+        }
+
+        with self.conn.cursor() as cur:
+            cur.execute(sql, kvals)
+
     def add_remote_activity(self, activity: proxies.Activity):
         """
         Add <activity> to <self.schema>.activity and <self.schema>.activity_database
@@ -315,40 +397,36 @@ class Sync:
         version_activity_remote = self.get_remote_activity_version(key=key,
                                                                    database=self.database.name)
 
-        kvals_activity = {'key': key,
-                          'name': activity.get('name') or key,
-                          'location': activity.get('location'),
-                          'type': activity.get('type'),
-                          'unit': activity.get('unit'),
-                          'version': activity.get('version'),
-                          'comment': activity.get('comment')
-                          }
-
         if version_activity_remote is None:
-            sql_activity = f"""INSERT INTO "{self.schema}"."activity" ("key", "name", "location",
-             "type", "unit", "version", "comment") VALUES (%(key)s, %(name)s, %(location)s, %(type)s,
-             %(unit)s, %(version)s, %(comment)s);"""
+            self.insert_remote_activity(
+                key=key,
+                name=activity.get('name') or key,
+                location=activity.get('location'),
+                type=activity.get('type'),
+                unit=activity.get('unit'),
+                version=activity.get('version'),
+                comment=activity.get('comment')
+            )
 
-            sql_activity_database = f"""INSERT INTO "{self.schema}"."activity_database"
-            ("key", "database") VALUES (%(key)s, %(database)s);"""
-            kvals_activity_database = {'key': key,
-                                       'database': database
-                                       }
+            self.insert_activity_database(key=key, database=database)
 
-            with self.conn.cursor() as cur:
-                cur.execute(sql_activity, kvals_activity)
-                cur.execute(sql_activity_database, kvals_activity_database)
-        elif version_activity_remote < kvals_activity['version']:
-            sql_activity = f"""UPDATE "{self.schema}"."activity" SET "name" = %(name)s,
-             "location" = %(location)s, "type" = %(type)s, "unit" = %(unit)s, 
-             "version" = %(version)s, "comment" = %(comment)s WHERE "key" = %(key)s;"""
+        elif version_activity_remote < activity.get('version'):
 
-            with self.conn.cursor() as cur:
-                cur.execute(sql_activity, kvals_activity)
-        elif version_activity_remote > kvals_activity['version']:
-            kvals = {'key': kvals_activity['key'],
-                     'version': kvals_activity['version'],
+            self.update_remote_activity(
+                key=key,
+                name=activity.get('name') or key,
+                location=activity.get('location'),
+                type=activity.get('type'),
+                unit=activity.get('unit'),
+                version=activity.get('version'),
+                comment=activity.get('comment')
+            )
+
+        elif version_activity_remote > activity.get('version'):
+            kvals = {'key': key,
+                     'version': activity.get('version'),
                      'remote_version': version_activity_remote}
+
             LOGGER.warning('local activity %(key)s version %(version)s is'
                            ' superseded by remote version'
                            ' %(remote_version)s', kvals)
@@ -377,7 +455,7 @@ class Sync:
             elif version_exchange_remote < version_exchange_local:
                 self.update_remote_exchange(key=key, local_exchange=exchange, remote_exchange=kvals)
             elif version_exchange_remote > version_exchange_local:
-                kvals_exchange = {'activity_key': kvals_activity['key'],
+                kvals_exchange = {'activity_key': key,
                                   'exchange_key': exchange_key,
                                   'local_version': version_exchange_local,
                                   'remote_version': version_exchange_remote}

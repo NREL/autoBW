@@ -519,6 +519,7 @@ class Sync:
 
             if _activity['version'] < activity['version']:
                 _activity.delete()
+
         if not self.local_activity_exists(key=key):
             _activity = self.database.new_activity(code=key, **activity)
             _activity.save()

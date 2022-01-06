@@ -389,7 +389,6 @@ class Sync:
             self.insert_remote_activity(
                 key=key,
                 activity=activity)
-            )
 
             self.insert_activity_database(key=key, database=database)
 
@@ -397,12 +396,7 @@ class Sync:
 
             self.update_remote_activity(
                 key=key,
-                name=activity.get('name') or key,
-                location=activity.get('location'),
-                type=activity.get('type'),
-                unit=activity.get('unit'),
-                version=activity.get('version'),
-                comment=activity.get('comment')
+                activity=activity
             )
 
         elif version_activity_remote > activity.get('version'):

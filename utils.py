@@ -1,5 +1,7 @@
 """Utility functions"""
 
+from hashlib import md5
+
 from bw2data.backends.peewee import proxies
 
 
@@ -10,7 +12,6 @@ def get_hash(*kvals) -> str:
     :param kvals: object to compute over
     :return: MD5 hash
     """
-    from hashlib import md5
 
     text = ' '.join([str(kval) for kval in kvals])
 

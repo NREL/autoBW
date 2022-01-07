@@ -14,7 +14,9 @@ from utils import validate_activity
 
 RESET_LOCAL_DB = True
 
-logging.basicConfig(format='%(asctime)s::%(levelname)s::%(name)s::%(lineno)s: %(message)s')
+logging.basicConfig(
+    format="%(asctime)s::%(levelname)s::%(name)s::%(lineno)s: %(message)s"
+)
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.DEBUG)
@@ -51,7 +53,7 @@ class Sync:
          WHERE "database" = %(database)s;"""
 
         with self.conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute(sql, {'database': self.database.name})
+            cur.execute(sql, {"database": self.database.name})
 
             return [dict(result) for result in cur.fetchall()]
 
@@ -67,8 +69,7 @@ class Sync:
          FROM "{self.schema}"."activity" WHERE "key" = %(key)s;"""
 
         with self.conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute(sql, {'database': self.database.name,
-                              'key': key})
+            cur.execute(sql, {"database": self.database.name, "key": key})
 
             return dict(cur.fetchone())
 
@@ -110,7 +111,7 @@ class Sync:
          FROM "{self.schema}"."exchange" WHERE "key" = %(key)s;"""
 
         with self.conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute(sql, {'key': key})
+            cur.execute(sql, {"key": key})
 
             results = [dict(result) for result in cur.fetchall()]
 
@@ -119,10 +120,10 @@ class Sync:
                 sql = f"""SELECT "name", "location", "unit", "type"
                  FROM "{self.schema}"."activity" WHERE "key" = %(key)s;"""
 
-                cur.execute(sql, {'key': exchange['input']})
+                cur.execute(sql, {"key": exchange["input"]})
 
                 exchange.update(cur.fetchone())
-                exchange['input'] = (self.database.name, exchange['input'])
+                exchange["input"] = (self.database.name, exchange["input"])
                 exchanges.append(exchange)
 
         return exchanges
@@ -138,11 +139,13 @@ class Sync:
          WHERE "database" = %(database)s;"""
 
         with self.conn.cursor() as cur:
-            cur.execute(sql, {'database': database})
+            cur.execute(sql, {"database": database})
 
             return bool(cur.fetchone()[0])
 
-    def remote_activity_exists(self, database: str, key: str, version: int = None) -> bool:
+    def remote_activity_exists(
+        self, database: str, key: str, version: int = None
+    ) -> bool:
         """
         Check if <key> exists for database <db> and <version) in <self.schema>.activity.
 
@@ -155,7 +158,7 @@ class Sync:
          WHERE "key" = %(key)s AND "database" = %(db)s;"""
 
         with self.conn.cursor() as cur:
-            cur.execute(sql, {'key': key, 'db': database})
+            cur.execute(sql, {"key": key, "db": database})
 
             remote_version = cur.fetchone()
 
@@ -207,10 +210,12 @@ class Sync:
         activity = self.database.get(key)
 
         for _exchange in activity.exchanges():
-            if _exchange.get('input') == exchange.get('input') and \
-                    _exchange.get('amount') == exchange.get('amount') and \
-                    _exchange.get('unit') == exchange.get('unit') and \
-                    _exchange.get('type') == exchange.get('type'):
+            if (
+                _exchange.get("input") == exchange.get("input")
+                and _exchange.get("amount") == exchange.get("amount")
+                and _exchange.get("unit") == exchange.get("unit")
+                and _exchange.get("type") == exchange.get("type")
+            ):
                 return True
 
         return False
@@ -226,7 +231,7 @@ class Sync:
             sql = f"""INSERT INTO {self.schema}."database" ("database") VALUES (%(database)s);"""
 
             with self.conn.cursor() as cur:
-                cur.execute(sql, {'database': database})
+                cur.execute(sql, {"database": database})
 
             self.conn.commit()
 
@@ -244,14 +249,15 @@ class Sync:
          "comment" = %(local_comment)s, "version" = %(local_version)s
           WHERE "key" = %(activity_key)s AND "input" = %(exchange_key)s"""
 
-        kvals = {'local_amount': local_exchange.get('amount'),
-                 'local_type': local_exchange.get('type'),
-                 'local_uncertainty_type': local_exchange.get('uncertainty_type', 0),
-                 'local_comment': local_exchange.get('comment'),
-                 'local_version': local_exchange.get('version'),
-                 'activity_key': key,
-                 'exchange_key': remote_exchange.get('input')
-                 }
+        kvals = {
+            "local_amount": local_exchange.get("amount"),
+            "local_type": local_exchange.get("type"),
+            "local_uncertainty_type": local_exchange.get("uncertainty_type", 0),
+            "local_comment": local_exchange.get("comment"),
+            "local_version": local_exchange.get("version"),
+            "activity_key": key,
+            "exchange_key": remote_exchange.get("input"),
+        }
 
         with self.conn.cursor() as cur:
             cur.execute(sql, kvals)
@@ -269,7 +275,7 @@ class Sync:
         sql = f"""SELECT "version" FROM "{self.schema}"."activities" WHERE "key" = %(key)s
          AND "database" = %(database)s;"""
         with self.conn.cursor() as cur:
-            cur.execute(sql, {'key': key, 'database': database})
+            cur.execute(sql, {"key": key, "database": database})
             try:
                 version_activity_remote = cur.fetchone()[0]
             except TypeError:
@@ -289,7 +295,7 @@ class Sync:
          WHERE "key" = %(key)s AND "input" = %(input)s;"""
 
         with self.conn.cursor() as cur:
-            cur.execute(sql_exchange_version, {'key': key, 'input': input_key})
+            cur.execute(sql_exchange_version, {"key": key, "input": input_key})
 
             try:
                 version_exchange_remote = cur.fetchone()[0]
@@ -306,6 +312,7 @@ class Sync:
         :param activity: [Activity] activity to insert
         :return: [None]
         """
+
         def insert_activity_database(key: str, database: str) -> None:
             """
             Insert new activity - database pair into remote database.
@@ -317,8 +324,7 @@ class Sync:
             sql = f"""INSERT INTO "{self.schema}"."activity_database"
             ("key", "database") VALUES (%(key)s, %(database)s);"""
 
-            kvals = {'key': key,
-                     'database': database}
+            kvals = {"key": key, "database": database}
 
             with self.conn.cursor() as cur:
                 try:
@@ -332,13 +338,13 @@ class Sync:
          %(type)s, %(unit)s, %(version)s, %(comment)s);"""
 
         kvals = {
-            'key': key,
-            'name': activity.get('name') or key,
-            'location': activity.get('location'),
-            'type': activity.get('type'),
-            'unit': activity.get('unit'),
-            'version': activity.get('version'),
-            'comment': activity.get('comment')
+            "key": key,
+            "name": activity.get("name") or key,
+            "location": activity.get("location"),
+            "type": activity.get("type"),
+            "unit": activity.get("unit"),
+            "version": activity.get("version"),
+            "comment": activity.get("comment"),
         }
 
         with self.conn.cursor() as cur:
@@ -360,13 +366,13 @@ class Sync:
          "version" = %(version)s, "comment" = %(comment)s WHERE "key" = %(key)s;"""
 
         kvals = {
-            'key': key,
-            'name': activity.get('name') or key,
-            'location': activity.get('location'),
-            'type': activity.get('type'),
-            'unit': activity.get('unit'),
-            'version': activity.get('version'),
-            'comment': activity.get('comment')
+            "key": key,
+            "name": activity.get("name") or key,
+            "location": activity.get("location"),
+            "type": activity.get("type"),
+            "unit": activity.get("unit"),
+            "version": activity.get("version"),
+            "comment": activity.get("comment"),
         }
 
         with self.conn.cursor() as cur:
@@ -382,7 +388,7 @@ class Sync:
         try:
             database, key = activity.key
         except AttributeError:
-            database, key = activity.get('input')
+            database, key = activity.get("input")
             activity = bw.Database(database).get(key)
 
         validate_activity(activity)
@@ -390,62 +396,72 @@ class Sync:
         self.add_remote_database(database=database)
 
         # get activity version
-        version_activity_remote = self.get_remote_activity_version(key=key,
-                                                                   database=self.database.name)
+        version_activity_remote = self.get_remote_activity_version(
+            key=key, database=self.database.name
+        )
 
         if version_activity_remote is None:
-            self.insert_remote_activity(
-                key=key,
-                activity=activity)
+            self.insert_remote_activity(key=key, activity=activity)
 
-        elif version_activity_remote < activity.get('version'):
+        elif version_activity_remote < activity.get("version"):
 
-            self.update_remote_activity(
-                key=key,
-                activity=activity
+            self.update_remote_activity(key=key, activity=activity)
+
+        elif version_activity_remote > activity.get("version"):
+            kvals = {
+                "key": key,
+                "version": activity.get("version"),
+                "remote_version": version_activity_remote,
+            }
+
+            LOGGER.warning(
+                "local activity %(key)s version %(version)s is"
+                " superseded by remote version"
+                " %(remote_version)s",
+                kvals,
             )
 
-        elif version_activity_remote > activity.get('version'):
-            kvals = {'key': key,
-                     'version': activity.get('version'),
-                     'remote_version': version_activity_remote}
-
-            LOGGER.warning('local activity %(key)s version %(version)s is'
-                           ' superseded by remote version'
-                           ' %(remote_version)s', kvals)
-
         for exchange in activity.exchanges():
-            _, exchange_key = exchange.get('input')
-            version_exchange_local = exchange.get('version')
+            _, exchange_key = exchange.get("input")
+            version_exchange_local = exchange.get("version")
 
-            if not self.remote_activity_exists(key=exchange_key,
-                                               database=database,
-                                               version=version_exchange_local):
+            if not self.remote_activity_exists(
+                key=exchange_key, database=database, version=version_exchange_local
+            ):
                 # add remote activity
                 self.add_remote_activity(exchange)
 
-            kvals = {'key': key,
-                     'amount': exchange.get('amount'),
-                     'input': exchange_key,
-                     'uncertainty_type': exchange.get('uncertainty_type')
-                     }
+            kvals = {
+                "key": key,
+                "amount": exchange.get("amount"),
+                "input": exchange_key,
+                "uncertainty_type": exchange.get("uncertainty_type"),
+            }
 
             # get exchange version
-            version_exchange_remote = self.get_remote_exchange_version(key=key,
-                                                                       input_key=exchange_key)
+            version_exchange_remote = self.get_remote_exchange_version(
+                key=key, input_key=exchange_key
+            )
 
             if version_exchange_remote is None:
                 self.add_remote_exchange(exchange=kvals)
             elif version_exchange_remote < version_exchange_local:
-                self.update_remote_exchange(key=key, local_exchange=exchange, remote_exchange=kvals)
+                self.update_remote_exchange(
+                    key=key, local_exchange=exchange, remote_exchange=kvals
+                )
             elif version_exchange_remote > version_exchange_local:
-                kvals_exchange = {'activity_key': key,
-                                  'exchange_key': exchange_key,
-                                  'local_version': version_exchange_local,
-                                  'remote_version': version_exchange_remote}
-                LOGGER.warning('local exchange between %(activity_key)s and %(exchange_key)s with'
-                               ' version %(local_version)s is superseded by remote version '
-                               '%(remote_version)s', kvals_exchange)
+                kvals_exchange = {
+                    "activity_key": key,
+                    "exchange_key": exchange_key,
+                    "local_version": version_exchange_local,
+                    "remote_version": version_exchange_remote,
+                }
+                LOGGER.warning(
+                    "local exchange between %(activity_key)s and %(exchange_key)s with"
+                    " version %(local_version)s is superseded by remote version "
+                    "%(remote_version)s",
+                    kvals_exchange,
+                )
             else:
                 continue
 
@@ -499,13 +515,14 @@ class Sync:
         sql = f"""INSERT INTO "{self.schema}"."exchange" ("key", "amount", "input",
          "uncertainty_type") VALUES (%(key)s, %(amount)s, %(input)s, %(uncertainty_type)s);"""
 
-        u_type = exchange.get('uncertainty_type') or Sync.DEFAULT_UNCERTAINTY_TYPE
+        u_type = exchange.get("uncertainty_type") or Sync.DEFAULT_UNCERTAINTY_TYPE
 
-        kvals = {'key': exchange.get('key'),
-                 'amount': exchange.get('amount'),
-                 'input': exchange.get('input'),
-                 'uncertainty_type': u_type
-                 }
+        kvals = {
+            "key": exchange.get("key"),
+            "amount": exchange.get("amount"),
+            "input": exchange.get("input"),
+            "uncertainty_type": u_type,
+        }
 
         with self.conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute(sql, kvals)
@@ -520,12 +537,12 @@ class Sync:
         :param activity: [dict] activity dictionary
         :return: [None]
         """
-        key = activity.pop('key')
+        key = activity.pop("key")
 
         if self.local_activity_exists(key=key):
             _activity = self.database.get(key)
 
-            if _activity['version'] < activity['version']:
+            if _activity["version"] < activity["version"]:
                 _activity.delete()
 
         if not self.local_activity_exists(key=key):
@@ -533,12 +550,14 @@ class Sync:
             _activity.save()
 
         for exchange in self.get_remote_exchanges(key=key):
-            exchange_key = exchange.get('input')[1]
+            exchange_key = exchange.get("input")[1]
 
             try:
                 assert key != exchange_key
             except AssertionError as matching_keys:
-                raise ValueError(f"activity {key} has itself as an exchange") from matching_keys
+                raise ValueError(
+                    f"activity {key} has itself as an exchange"
+                ) from matching_keys
 
             # if self.local_activity_exists(key=exchange_key):
             #     old_exchange_activity = self.database.get(exchange_key)
@@ -551,35 +570,43 @@ class Sync:
                 try:
                     self.add_local_activity(activity=exchange_activity)
                 except RecursionError as recursion_key:
-                    raise Exception(f"activity {key} has itself as an exchange") from recursion_key
+                    raise Exception(
+                        f"activity {key} has itself as an exchange"
+                    ) from recursion_key
 
             if not self.local_exchange_exists(exchange=exchange, key=key):
                 new_exchange = _activity.new_exchange(**exchange)
                 new_exchange.save()
             else:
-                new_exchange_version = exchange['version']
+                new_exchange_version = exchange["version"]
 
                 for _exchange in _activity.exchanges():
-                    if _exchange.get('input')[1] == exchange.get('input') and \
-                            _exchange.get('amount') == exchange.get('amount') and \
-                            _exchange.get('unit') == exchange.get('unit') and \
-                            _exchange.get('type') == exchange.get('type'):
-                        old_exchange_version = _exchange.get('version')
+                    if (
+                        _exchange.get("input")[1] == exchange.get("input")
+                        and _exchange.get("amount") == exchange.get("amount")
+                        and _exchange.get("unit") == exchange.get("unit")
+                        and _exchange.get("type") == exchange.get("type")
+                    ):
+                        old_exchange_version = _exchange.get("version")
 
                         if old_exchange_version < new_exchange_version:
                             _exchange.delete()
                             new_exchange = _activity.new_exchange(**exchange)
                             new_exchange.save()
                         elif old_exchange_version > new_exchange_version:
-                            kvals = {'exchange_key': exchange_key,
-                                     '_activity_key': _activity.key,
-                                     'new_exchange_version': new_exchange_version,
-                                     'old_exchange_version': old_exchange_version
-                                     }
-                            LOGGER.warning('remote exchange %(exchange_key)s for activity '
-                                           '%(_activity_key)s version %(new_exchange_version)s is'
-                                           ' superseded by local exchange version'
-                                           ' %(old_exchange_version)s', kvals)
+                            kvals = {
+                                "exchange_key": exchange_key,
+                                "_activity_key": _activity.key,
+                                "new_exchange_version": new_exchange_version,
+                                "old_exchange_version": old_exchange_version,
+                            }
+                            LOGGER.warning(
+                                "remote exchange %(exchange_key)s for activity "
+                                "%(_activity_key)s version %(new_exchange_version)s is"
+                                " superseded by local exchange version"
+                                " %(old_exchange_version)s",
+                                kvals,
+                            )
                         else:
                             pass
 
@@ -605,113 +632,120 @@ class Sync:
                 self.add_local_activity(activity=activity)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-    bw.projects.set_current('ethanol_LCA_test')
+    bw.projects.set_current("ethanol_LCA_test")
 
-    DATABASE = 'EM_LCA_0'
+    DATABASE = "EM_LCA_0"
 
     DB = bw.Database(DATABASE)
 
     if RESET_LOCAL_DB:
-        DB.write({
-            (DATABASE, "Electricity production"): {
-                'name': 'Electricity production',
-                'type': 'production',
-                'location': 'GLO',
-                'unit': 'kWh',
-                'version': 0,
-                'exchanges': [{
-                    'input': (DATABASE, 'Fuel production'),
-                    'amount': 2,
-                    'unit': 'kg',
-                    'type': 'technosphere',
-                    'version': 0
-                }, {
-                    'input': (DATABASE, 'Carbon dioxide'),
-                    'amount': 1,
-                    'unit': 'kg',
-                    'type': 'biosphere',
-                    'version': 0
-                }, {
-                    'input': (DATABASE, 'Sulphur dioxide'),
-                    'amount': 0.1,
-                    'unit': 'kg',
-                    'type': 'biosphere',
-                    'version': 0
-                }]
-            },
-            (DATABASE, 'Fuel production'): {
-                'name': 'Fuel production',
-                'type': 'production',
-                'location': 'GLO',
-                'unit': 'kg',
-                'version': 0,
-                'exchanges': [{
-                    'input': (DATABASE, 'Carbon dioxide'),
-                    'amount': 10,
-                    'unit': 'kg',
-                    'type': 'biosphere',
-                    'version': 0
-                }, {
-                    'input': (DATABASE, 'Sulphur dioxide'),
-                    'amount': 2,
-                    'unit': 'kg',
-                    'type': 'biosphere',
-                    'version': 0
-                }, {
-                    'input': (DATABASE, 'Crude oil'),
-                    'amount': -50,
-                    'unit': 'kg',
-                    'type': 'biosphere',
-                    'version': 0
-                }]
-            },
-            (DATABASE, 'Carbon dioxide'): {'name': 'Carbon dioxide',
-                                           'type': 'biosphere',
-                                           'location': 'GLO',
-                                           'unit': 'kg',
-                                           'version': 0
-                                           },
-            (DATABASE, 'Sulphur dioxide'): {'name': 'Sulphur dioxide',
-                                            'location': 'GLO',
-                                            'unit': 'kg',
-                                            'type': 'biosphere',
-                                            'version': 0},
-            (DATABASE, 'Crude oil'): {'name': 'Crude oil',
-                                      'location': 'GLO',
-                                      'unit': 'kg',
-                                      'type': 'biosphere',
-                                      'version': 0}
-        })
+        DB.write(
+            {
+                (DATABASE, "Electricity production"): {
+                    "name": "Electricity production",
+                    "type": "production",
+                    "location": "GLO",
+                    "unit": "kWh",
+                    "version": 0,
+                    "exchanges": [
+                        {
+                            "input": (DATABASE, "Fuel production"),
+                            "amount": 2,
+                            "unit": "kg",
+                            "type": "technosphere",
+                            "version": 0,
+                        },
+                        {
+                            "input": (DATABASE, "Carbon dioxide"),
+                            "amount": 1,
+                            "unit": "kg",
+                            "type": "biosphere",
+                            "version": 0,
+                        },
+                        {
+                            "input": (DATABASE, "Sulphur dioxide"),
+                            "amount": 0.1,
+                            "unit": "kg",
+                            "type": "biosphere",
+                            "version": 0,
+                        },
+                    ],
+                },
+                (DATABASE, "Fuel production"): {
+                    "name": "Fuel production",
+                    "type": "production",
+                    "location": "GLO",
+                    "unit": "kg",
+                    "version": 0,
+                    "exchanges": [
+                        {
+                            "input": (DATABASE, "Carbon dioxide"),
+                            "amount": 10,
+                            "unit": "kg",
+                            "type": "biosphere",
+                            "version": 0,
+                        },
+                        {
+                            "input": (DATABASE, "Sulphur dioxide"),
+                            "amount": 2,
+                            "unit": "kg",
+                            "type": "biosphere",
+                            "version": 0,
+                        },
+                        {
+                            "input": (DATABASE, "Crude oil"),
+                            "amount": -50,
+                            "unit": "kg",
+                            "type": "biosphere",
+                            "version": 0,
+                        },
+                    ],
+                },
+                (DATABASE, "Carbon dioxide"): {
+                    "name": "Carbon dioxide",
+                    "type": "biosphere",
+                    "location": "GLO",
+                    "unit": "kg",
+                    "version": 0,
+                },
+                (DATABASE, "Sulphur dioxide"): {
+                    "name": "Sulphur dioxide",
+                    "location": "GLO",
+                    "unit": "kg",
+                    "type": "biosphere",
+                    "version": 0,
+                },
+                (DATABASE, "Crude oil"): {
+                    "name": "Crude oil",
+                    "location": "GLO",
+                    "unit": "kg",
+                    "type": "biosphere",
+                    "version": 0,
+                },
+            }
+        )
 
-    CONN = psycopg2.connect(host='walter.nrel.gov', dbname='em_lca')
+    CONN = psycopg2.connect(host="walter.nrel.gov", dbname="em_lca")
 
-    LOGGER.debug('before sync')
+    LOGGER.debug("before sync")
     for activity in DB:
-        kvals = {'activity': activity,
-                 'version': activity['version']
-                 }
-        LOGGER.debug('%(activity)s [version: %(version)s]', kvals)
+        kvals = {"activity": activity, "version": activity["version"]}
+        LOGGER.debug("%(activity)s [version: %(version)s]", kvals)
         for exchange in activity.exchanges():
-            kvals = {'exchange': exchange,
-                     'version': exchange['version']
-                     }
-            LOGGER.debug('\t %(exchange)s [version: (version)s]', kvals)
+            kvals = {"exchange": exchange, "version": exchange["version"]}
+            LOGGER.debug("\t %(exchange)s [version: (version)s]", kvals)
 
-    SYNC = Sync(conn=CONN, database=DB, schema='em_lca')
+    SYNC = Sync(conn=CONN, database=DB, schema="em_lca")
 
     SYNC.sync(local_to_remote=True, remote_to_local=True)
 
-    LOGGER.debug('\nafter sync')
+    LOGGER.debug("\nafter sync")
     for activity in DB:
-        kvals = {'activity': activity,
-                 'version': activity['version']
-                 }
+        kvals = {"activity": activity, "version": activity["version"]}
 
-        LOGGER.debug('%(activity)s [version: %(version)s]', kvals)
+        LOGGER.debug("%(activity)s [version: %(version)s]", kvals)
         for exchange in activity.exchanges():
-            kvals = {'exchange': exchange,
-                     'version': exchange['version']
-                     }
-            LOGGER.debug('\t %(exchange)s [version: %(version)s]', kvals)
+            kvals = {"exchange": exchange, "version": exchange["version"]}
+            LOGGER.debug("\t %(exchange)s [version: %(version)s]", kvals)

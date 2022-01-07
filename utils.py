@@ -12,9 +12,9 @@ def get_hash(*kvals) -> str:
     :param kvals: object to compute over
     :return: MD5 hash
     """
-    text = ' '.join([str(kval) for kval in kvals])
+    text = " ".join([str(kval) for kval in kvals])
 
-    return md5(text.encode('utf-8')).hexdigest()
+    return md5(text.encode("utf-8")).hexdigest()
 
 
 def validate_activity(activity: proxies.Activity) -> None:
@@ -26,12 +26,14 @@ def validate_activity(activity: proxies.Activity) -> None:
     """
     key = activity.key[1]
 
-    for attribute in ['name', 'location', 'type', 'unit', 'version']:
+    for attribute in ["name", "location", "type", "unit", "version"]:
         try:
             assert activity[attribute] is not None
         except KeyError as missing_attribute:
-            raise AttributeError(f"attribute {attribute} is missing for activity {key}") \
-                from missing_attribute
+            raise AttributeError(
+                f"attribute {attribute} is missing for activity {key}"
+            ) from missing_attribute
         except AssertionError as null_attribute:
-            raise AttributeError(f"attribute {attribute} is Null in activity: {key}") \
-                from null_attribute
+            raise AttributeError(
+                f"attribute {attribute} is Null in activity: {key}"
+            ) from null_attribute

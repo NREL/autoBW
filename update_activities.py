@@ -1,23 +1,23 @@
-"""Script to update local and remote activities for testing Synch"""
+"""Script to update local and remote activities for testing Sync."""
 
 import brightway2 as bw
 import psycopg2
 
 if __name__ == '__main__':
     bw.projects.set_current('ethanol_LCA_test')
-    db = bw.Database('EM_LCA_0')
+    DB = bw.Database('EM_LCA_0')
 
     # update local activity version
     for activity_key in ['1', '2']:
-        activity = db.get(activity_key)
-        activity['version'] = 1
-        activity.save()
+        ACTIVITY = DB.get(activity_key)
+        ACTIVITY['version'] = 1
+        ACTIVITY.save()
 
     # add new local activity
 
     # update local exchange version
-    activity = db.get('Carbon dioxide')
-    for exchange in activity.exchanges():
+    ACTIVITY = DB.get('Carbon dioxide')
+    for exchange in ACTIVITY.exchanges():
         if exchange.get('input') == ('other_database', '1') and\
                 exchange.get('amount') == 10 and\
                 exchange.get('unit') == 'gallon' and\
@@ -29,7 +29,7 @@ if __name__ == '__main__':
             exchange.delete()
 
             _exchange['version'] = 1
-            new_exchange = activity.new_exchange(**_exchange)
+            new_exchange = ACTIVITY.new_exchange(**_exchange)
             new_exchange.save()
 
     # update and add remote activities

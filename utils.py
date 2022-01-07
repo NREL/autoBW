@@ -1,4 +1,4 @@
-"""Utility functions"""
+"""Utility functions."""
 
 from hashlib import md5
 
@@ -12,7 +12,6 @@ def get_hash(*kvals) -> str:
     :param kvals: object to compute over
     :return: MD5 hash
     """
-
     text = ' '.join([str(kval) for kval in kvals])
 
     return md5(text.encode('utf-8')).hexdigest()
@@ -21,10 +20,10 @@ def get_hash(*kvals) -> str:
 def validate_activity(activity: proxies.Activity) -> None:
     """
     Check for 'name', 'location', 'type', 'unit', 'version', 'comment' attributes in <activity>.
+
     :param activity: brightway activity or exchange
     :return:
     """
-
     key = activity.key[1]
 
     for attribute in ['name', 'location', 'type', 'unit', 'version']:

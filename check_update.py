@@ -1,15 +1,15 @@
-"""Script to report activity updates for testing Sync"""
+"""Script to report activity updates for testing Sync."""
 
 import brightway2 as bw
-import psycopg2
 from pandas import DataFrame
-from psycopg2.extras import DictCursor
 from peewee import DoesNotExist
 
+import psycopg2
+from psycopg2.extras import DictCursor
 
 if __name__ == '__main__':
     bw.projects.set_current('ethanol_LCA_test')
-    db = bw.Database('EM_LCA_0')
+    DB = bw.Database('EM_LCA_0')
 
     with psycopg2.connect(host='walter.nrel.gov', dbname='em_lca') as conn:
         SQL = """SELECT "key", "version" FROM "em_lca"."activity"
@@ -19,35 +19,35 @@ if __name__ == '__main__':
         with conn.cursor(cursor_factory=DictCursor) as cur:
             cur.execute(SQL)
 
-            versions = [dict(result) for result in cur.fetchall()]
+            VERSIONS = [dict(result) for result in cur.fetchall()]
 
-    kvals = {'key': [],
+    KVALS = {'key': [],
              'local_version': [],
              'remote_version': []
              }
 
-    for version in versions:
-        kvals['key'].append(version['key'])
+    for version in VERSIONS:
+        KVALS['key'].append(version['key'])
 
         try:
-            _key = db.get(version['key'])
+            _key = DB.get(version['key'])
         except DoesNotExist:
             if version['key'] == '7':
-                kvals['local_version'].append(None)
+                KVALS['local_version'].append(None)
             else:
                 raise
         else:
-            kvals['local_version'].append(_key['version'])
+            KVALS['local_version'].append(_key['version'])
 
-        kvals['remote_version'].append(version['version'])
+        KVALS['remote_version'].append(version['version'])
 
-    print(DataFrame(kvals).set_index('key'))
+    print(DataFrame(KVALS).set_index('key'))
 
     for key in ('1', '2', '7', 'Fuel production', 'Electricity production', 'Carbon dioxide'):
         local_exchanges = []
         print(key)
         try:
-            activity = db.get(key)
+            activity = DB.get(key)
         except DoesNotExist:
             if key == '7':
                 pass

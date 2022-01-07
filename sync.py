@@ -1,11 +1,13 @@
-"""Syncing utility for Brightway2 databases"""
+"""Syncing utility for Brightway2 databases."""
 
 import logging
 
 import brightway2 as bw
-import psycopg2
 from bw2data.backends.peewee import proxies
 from peewee import DoesNotExist
+
+import psycopg2
+from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
 from psycopg2.extras import DictCursor
 
 from utils import validate_activity
@@ -22,20 +24,18 @@ LOGGER.setLevel(logging.DEBUG)
 
 
 class Sync:
-    """
-    A synchronization class for local and remote brightway2 databases.
-    """
+    """A synchronization class for local and remote brightway2 databases."""
 
     DEFAULT_UNCERTAINTY_TYPE = 0
 
     def __init__(self, conn, database: bw.Database, schema: str):
         """
+        Initialize Sync instance.
 
         :param conn: psycopg2 connection object
         :param database: brightway2 database object
         :param schema: str remote schema name
         """
-
         self.conn = conn
         self.database = database
         self.schema = schema
@@ -46,7 +46,6 @@ class Sync:
 
         :return: list
         """
-
         sql = """SELECT "key", "name", "unit", "location", "type", "version",
          COALESCE("comment", '') AS "comment" FROM "{self.schema}"."activities"
          WHERE "database" = %(database)s;"""
@@ -58,11 +57,11 @@ class Sync:
 
     def get_remote_activity(self, key: str) -> dict:
         """
-        Collect activity for <key> from <self.schema>.activity
+        Collect activity for <key> from <self.schema>.activity.
+
         :param key: str activity key
         :return: dict
         """
-
         sql = f"""SELECT "key", "name", "unit", "location", "type", "version",
          COALESCE("comment", '') AS "comment"
          FROM "{self.schema}"."activity" WHERE "key" = %(key)s;"""
@@ -75,10 +74,10 @@ class Sync:
 
     def get_local_activities(self) -> list:
         """
-        Collect activities in self.database
+        Collect activities in self.database.
+
         :return: list
         """
-
         activities = []
         for activity in self.database:
             activities.append(activity)
@@ -88,7 +87,8 @@ class Sync:
     @staticmethod
     def get_local_exchanges(activity: proxies.Activity) -> list:
         """
-        Collect exchanges for a local activity
+        Collect exchanges for a local activity.
+
         :param activity: [Activity] brightway2 activity
         :return: [list]
         """
@@ -100,11 +100,11 @@ class Sync:
 
     def get_remote_exchanges(self, key: str) -> list:
         """
-        Collect exchanges from <self.schema>.exchanges for <key>
+        Collect exchanges from <self.schema>.exchanges for <key>.
+
         :param key: str activity key
         :return: list
         """
-
         sql = f"""SELECT "amount", "input", "uncertainty_type",
          COALESCE("comment", '') AS "comment", "version"
          FROM "{self.schema}"."exchange" WHERE "key" = %(key)s;"""
@@ -129,7 +129,8 @@ class Sync:
 
     def remote_database_exists(self, database: str) -> bool:
         """
-        Check if <database> exists in <self.schema>.database
+        Check if <database> exists in <self.schema>.database.
+
         :param database: str database name
         :return: bool
         """
@@ -143,7 +144,8 @@ class Sync:
 
     def remote_activity_exists(self, database: str, key: str, version: int = None) -> bool:
         """
-        Check if <key> exists for database <db> and <version) in <self.schema>.activity
+        Check if <key> exists for database <db> and <version) in <self.schema>.activity.
+
         :param database: str database name
         :param key: str activity code
         :param version int activity version
@@ -166,7 +168,8 @@ class Sync:
 
     def remote_exchange_exists(self, exchange: dict) -> bool:
         """
-        Check if <exchange> exists in <self.schema>.exchange
+        Check if <exchange> exists in <self.schema>.exchange.
+
         :param exchange: dict exchange kvals
         :return: bool
         """
@@ -181,11 +184,11 @@ class Sync:
 
     def local_activity_exists(self, key: str) -> bool:
         """
-        Check if <key> exists in self.database
+        Check if <key> exists in self.database.
+
         :param key: str activity key
         :return: bool
         """
-
         try:
             self.database.get(key)
         except DoesNotExist:
@@ -195,12 +198,12 @@ class Sync:
 
     def local_exchange_exists(self, exchange: dict, key: str) -> bool:
         """
-        Check if <exchange> exists in <activity>
+        Check if <exchange> exists in <activity>.
+
         :param exchange: dict exchange kvals
         :param key: str activity key
         :return:
         """
-
         activity = self.database.get(key)
 
         for _exchange in activity.exchanges():
@@ -212,9 +215,10 @@ class Sync:
 
         return False
 
-    def add_remote_database(self, database: str):
+    def add_remote_database(self, database: str) -> None:
         """
-        Add <database> to <self.schema>.database
+        Add <database> to <self.schema>.database.
+
         :param database: str database name
         :return:
         """
@@ -229,12 +233,12 @@ class Sync:
     def update_remote_exchange(self, key, local_exchange, remote_exchange):
         """
         Update <remote_exchange> to match <local_exchange>.
+
         :param key:
         :param local_exchange:
         :param remote_exchange:
         :return:
         """
-
         sql = f"""UPDATE "{self.schema}"."exchange" SET "amount" = %(local_amount)s,
          "type" = %(local_type)s, "uncertainty_type" = %(local_uncertainty_type)s,
          "comment" = %(local_comment)s, "version" = %(local_version)s
@@ -257,11 +261,11 @@ class Sync:
     def get_remote_activity_version(self, key: str, database: str) -> str:
         """
         Get remote activity version for <key> in <database>.
+
         :param key: [str] activity key
         :param database: [str] database name
         :return: [str] activity version
         """
-
         sql = f"""SELECT "version" FROM "{self.schema}"."activities" WHERE "key" = %(key)s
          AND "database" = %(database)s;"""
         with self.conn.cursor() as cur:
@@ -273,19 +277,19 @@ class Sync:
 
         return version_activity_remote
 
-    def get_remote_exchange_version(self, key: str, input: str) -> str:
+    def get_remote_exchange_version(self, key: str, input_key: str) -> str:
         """
         Get remote exchange version for <key> and <input>.
+
         :param key: [str] activity key
-        :param input: [str] exchange key
+        :param input_key: [str] exchange key
         :return: [str] exchange version
         """
-
         sql_exchange_version = f"""SELECT "version" FROM "{self.schema}"."exchange"
          WHERE "key" = %(key)s AND "input" = %(input)s;"""
 
         with self.conn.cursor() as cur:
-            cur.execute(sql_exchange_version, {'key': key, 'input': input})
+            cur.execute(sql_exchange_version, {'key': key, 'input': input_key})
 
             try:
                 version_exchange_remote = cur.fetchone()[0]
@@ -302,9 +306,29 @@ class Sync:
         :param activity: [Activity] activity to insert
         :return: [None]
         """
+        def insert_activity_database(key: str, database: str) -> None:
+            """
+            Insert new activity - database pair into remote database.
+
+            :param key: [str] activity key
+            :param database: [str] database name
+            :return: [None]
+            """
+            sql = f"""INSERT INTO "{self.schema}"."activity_database"
+            ("key", "database") VALUES (%(key)s, %(database)s);"""
+
+            kvals = {'key': key,
+                     'database': database}
+
+            with self.conn.cursor() as cur:
+                try:
+                    cur.execute(sql, kvals)
+                    cur.commit()
+                except UniqueViolation:
+                    pass
 
         sql = f"""INSERT INTO "{self.schema}"."activity" ("key", "name", "location",
-         "type", "unit", "version", "comment") VALUES (%(key)s, %(name)s, %(location)s, 
+         "type", "unit", "version", "comment") VALUES (%(key)s, %(name)s, %(location)s,
          %(type)s, %(unit)s, %(version)s, %(comment)s);"""
 
         kvals = {
@@ -321,22 +345,7 @@ class Sync:
             cur.execute(sql, kvals)
             self.conn.commit()
 
-    def insert_activity_database(self, key: str, database: str) -> None:
-        """
-        Insert new activity - database pair into remote database.
-        :param key: [str] activity key
-        :param database: [str] database name
-        :return: [None]
-        """
-
-        sql = f"""INSERT INTO "{self.schema}"."activity_database"
-        ("key", "database") VALUES (%(key)s, %(database)s);"""
-
-        kvals = {'key': key,
-                 'database': database}
-
-        with self.conn.cursor() as cur:
-            cur.execute(sql, kvals)
+        insert_activity_database(key=key, database=self.database.name)
 
     def update_remote_activity(self, key: str, activity: proxies.Activity) -> None:
         """
@@ -346,9 +355,8 @@ class Sync:
         :param activity: [Activity] activity to update
         :return: [None]
         """
-
         sql = f"""UPDATE "{self.schema}"."activity" SET "name" = %(name)s,
-         "location" = %(location)s, "type" = %(type)s, "unit" = %(unit)s, 
+         "location" = %(location)s, "type" = %(type)s, "unit" = %(unit)s,
          "version" = %(version)s, "comment" = %(comment)s WHERE "key" = %(key)s;"""
 
         kvals = {
@@ -364,13 +372,13 @@ class Sync:
         with self.conn.cursor() as cur:
             cur.execute(sql, kvals)
 
-    def add_remote_activity(self, activity: proxies.Activity):
+    def add_remote_activity(self, activity: proxies.Activity) -> None:
         """
-        Add <activity> to <self.schema>.activity and <self.schema>.activity_database
+        Add <activity> to <self.schema>.activity and <self.schema>.activity_database.
+
         :param activity: brightway Activity
         :return:
         """
-
         try:
             database, key = activity.key
         except AttributeError:
@@ -389,8 +397,6 @@ class Sync:
             self.insert_remote_activity(
                 key=key,
                 activity=activity)
-
-            self.insert_activity_database(key=key, database=database)
 
         elif version_activity_remote < activity.get('version'):
 
@@ -425,7 +431,8 @@ class Sync:
                      }
 
             # get exchange version
-            version_exchange_remote = self.get_remote_exchange_version(key=key, input=exchange_key)
+            version_exchange_remote = self.get_remote_exchange_version(key=key,
+                                                                       input_key=exchange_key)
 
             if version_exchange_remote is None:
                 self.add_remote_exchange(exchange=kvals)
@@ -482,13 +489,13 @@ class Sync:
 
             self.conn.commit()
 
-    def add_remote_exchange(self, exchange: dict):
+    def add_remote_exchange(self, exchange: dict) -> None:
         """
-        Add <exchange> to <self.schema>.exchange
+        Add <exchange> to <self.schema>.exchange.
+
         :param exchange: dict exchange kvals
         :return:
         """
-
         sql = f"""INSERT INTO "{self.schema}"."exchange" ("key", "amount", "input",
          "uncertainty_type") VALUES (%(key)s, %(amount)s, %(input)s, %(uncertainty_type)s);"""
 
@@ -506,12 +513,13 @@ class Sync:
         self.conn.commit()
 
     def add_local_activity(self, activity: dict) -> None:
+        # pylint: disable=too-many-branches
         """
-        Add <activity> to self.database
+        Add <activity> to self.database.
+
         :param activity: [dict] activity dictionary
         :return: [None]
         """
-
         key = activity.pop('key')
 
         if self.local_activity_exists(key=key):
@@ -581,7 +589,8 @@ class Sync:
 
     def sync(self, local_to_remote=True, remote_to_local=True):
         """
-        Synchronize local and remote databases
+        Synchronize local and remote databases.
+
         :param local_to_remote: bool push local differences to remote
         :param remote_to_local: bool pull remote differences into local
         :return:
@@ -602,10 +611,10 @@ if __name__ == '__main__':
 
     DATABASE = 'EM_LCA_0'
 
-    db = bw.Database(DATABASE)
+    DB = bw.Database(DATABASE)
 
     if RESET_LOCAL_DB:
-        db.write({
+        DB.write({
             (DATABASE, "Electricity production"): {
                 'name': 'Electricity production',
                 'type': 'production',
@@ -676,10 +685,10 @@ if __name__ == '__main__':
                                       'version': 0}
         })
 
-    conn = psycopg2.connect(host='walter.nrel.gov', dbname='em_lca')
+    CONN = psycopg2.connect(host='walter.nrel.gov', dbname='em_lca')
 
     LOGGER.debug('before sync')
-    for activity in db:
+    for activity in DB:
         kvals = {'activity': activity,
                  'version': activity['version']
                  }
@@ -690,12 +699,12 @@ if __name__ == '__main__':
                      }
             LOGGER.debug('\t %(exchange)s [version: (version)s]', kvals)
 
-    sync = Sync(conn=conn, database=db, schema='em_lca')
+    SYNC = Sync(conn=CONN, database=DB, schema='em_lca')
 
-    sync.sync(local_to_remote=True, remote_to_local=True)
+    SYNC.sync(local_to_remote=True, remote_to_local=True)
 
     LOGGER.debug('\nafter sync')
-    for activity in db:
+    for activity in DB:
         kvals = {'activity': activity,
                  'version': activity['version']
                  }

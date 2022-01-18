@@ -4,12 +4,11 @@ import yaml
 import logging
 import uuid
 import time
+import json
 
 import brightway2 as bw
 from bw2data.validate import db_validator
 import pandas as pd
-
-import pdb
 
 # set up arguments for command line running
 parser = argparse.ArgumentParser(description='Execute automatic Brightway LCIA')
@@ -96,9 +95,6 @@ else:
 
 # Create foreground database from imported Excel data
 
-# Check list of existing databases against the databases to be created
-# If there is overlap, then perform checks for duplicate activities/exchanges
-
 # Import edit information from template
 fg_db_file = os.path.join(
     fileIO.get('data_directory'),
@@ -132,13 +128,15 @@ except ValueError:
     logging.warning(msg='Add Exchanges sheet not found')
     _add_exchanges = pd.DataFrame()
 
+# @TODO: Separate out activities to be created by database name. Create
+# multiple custom databases to import if necessary.
 
 # Add activities to foreground database(s)
 if not _create_activities.empty:
     # Find and delete any foreground databases with the same name as in the
     # import template.
     # Get list of foreground databases to be created.
-    _fg_db = _create_activities.database.unique().tolist()
+    _fg_db = _create_activities.activity_database.unique().tolist()
 
     # Identify foreground databases that already exist.
     for old in _fg_db:
@@ -150,73 +148,125 @@ if not _create_activities.empty:
     bw_db_list = [key for key, value in bw.databases.items()]
     logging.info(msg=f'{prj} databases are {bw_db_list}')
 
-    # Generate unique activity code with uuid
-    _create_activities.activity_code = [
-        uuid.uuid4().hex
-        for _ in range(len(_create_activities.activity_name))
-    ]
-
+    # Generate unique activity code with uuid.
+    # Because all activities in this DataFrame are new, all of them need newly
+    # created codes.
+    _create_activities.code = pd.Series(
+        data=[
+            uuid.uuid4().hex
+            for _ in range(len(_create_activities.activity))
+        ],
+        index=_create_activities.index
+    )
     # Log the activities to be created and their newly assigned codes
-    logging.info(msg=f'Creating activities: {_create_activities.activity_name.values.tolist()}')
-    logging.info(msg=f'Creating activity codes: {_create_activities.activity_code.values.tolist()}')
+    logging.info(msg=f'Creating activities: {_create_activities.activity.values.tolist()}')
+    logging.info(msg=f'Creating activity codes: {_create_activities.code.values.tolist()}')
 else:
+    _create_activities = pd.DataFrame()
     logging.info(msg='No activities to create')
 
 # Create the import data dictionary structure, populate with activity-level
 # information only. The exchange information will be added in the next step.
 # @TODO Is it possible to vectorize to avoid loop?
-# @TODO Will this work if _create_activities is empty? Does it matter?
 _import = {}
 for i in _create_activities.index:
-    _import[(_create_activities.database[i],
-             _create_activities.activity_code[i])] = \
+    _import[(_create_activities.activity_database[i],
+             _create_activities.code[i])] = \
         {
-            "name": _create_activities.activity_name[i],
+            "name": _create_activities.activity[i],
             "unit": _create_activities.reference_product_unit[i],
-            "location": _create_activities.location[i],
+            "location": _create_activities.activity_location[i],
             "exchanges": []
         }
 
 
 # Add exchanges to existing activities
 if not _add_exchanges.empty:
-    # If activity_names listed under Add Exchanges are not also listed under
+    # If activities listed under Add Exchanges are not also listed under
     # Create Activities, throw an error
     _missing_acts = [
         _
-        for _ in _add_exchanges.activity_name.unique()
-        if _ not in _create_activities.activity_name.unique()
+        for _ in _add_exchanges.activity.unique()
+        if _ not in _create_activities.activity.unique()
     ]
     if _missing_acts:
-        logging.error(msg=f'Add Exchanges: Error in activity_names {_missing_acts}')
+        logging.error(msg=f'Add Exchanges: Missing new activities {_missing_acts}')
         exit(1)
 
-    # Fill in the code column with values stored in _create_activities
-    _add_exchanges = _add_exchanges.merge(_create_activities,on=['database','activity_name','location'])
-    pdb.set_trace()
+    # The newly created exchanges also need codes. For exchanges that exist
+    # in the database being created and imported, these codes were already
+    # created and are stored in the _create_activities DataFrame. For exchanges
+    # that exist in another database, like ecoinvent, the user must fill in
+    # these values before beginning the import process.
+    # In this step, codes stored in _create_activities are assigned to the
+    # corresponding exchange. Codes already present in _add_exchanges are NOT
+    # overwritten.
+    _add_exchanges.activity_code = _add_exchanges.merge(
+        _create_activities,
+        on=['activity_database','activity','activity_location'],
+        how='right'
+    ).code
+
+    # Filling the exchange codes is done in two steps. First the merge gets us
+    # previously created codes for new exchanges in the custom database. Then,
+    # the codes from the merge are combined with the existing exchange_code
+    # column, which may have codes from other databases.
+    _new_exchange_codes = _add_exchanges.merge(
+        _create_activities,
+        left_on=['exchange_database','exchange','activity_location'],
+        right_on=['activity_database','reference_product','activity_location'],
+        how='left'
+    ).code
+    _add_exchanges.exchange_code = _new_exchange_codes.fillna('') + \
+                                   _add_exchanges.exchange_code.fillna('')
+
     # Append the exchange data to the "exchanges" list of dicts under the
-    # relevant activity
+    # relevant activity.
     for i in _add_exchanges.index:
         _import[
-            (_add_exchanges.database[i],
+            (_add_exchanges.activity_database[i],
              _add_exchanges.activity_code[i])
         ]['exchanges'].append(
             {
                 "amount": _add_exchanges.amount[i],
-                "input": (_add_exchanges.exchange[i], _add_exchanges.exchange_code[i]),
+                "input": (_add_exchanges.exchange_database[i],
+                          _add_exchanges.exchange_code[i]),
+                "unit": _add_exchanges.unit[i],
                 "type": 'Technosphere'
             }
         )
-pdb.set_trace()
+
 if not _delete_exchanges.empty:
     pass
     # Delete exchanges from existing activities
         # If the activity does not exist
         # If the exchange in the activity does not exist
 
-# Validate data before linking or saving
-logging.debug(msg=f'Foreground database to import: {_import}')
-db_validator(_import)
+logging.debug(msg=f'Foreground database created')
+
+# Save a copy of the custom database for future reference
+if flags.get('save_imported_db'):
+    with open('imported_db', 'w') as db_dump:
+        json.dump(_import, db_dump)
+        db_dump.close()
+
+# Use built-in Brightway method to validate the custom database before linking
+validate = db_validator(_import)
+if validate is not dict:
+    logging.error(msg=f'Database to import is not valid: {validate}')
+    exit(1)
+
+db = bw.Database('new_database')
+
+db.write(_import)
+
+db.apply_strategies()
+
+db.match_database("biosphere3", fields=('name', 'unit', 'location', 'categories'))
+
+db.match_database("ecoinvent3.7.1 cut-off", fields=('name', 'unit', 'location', 'reference product'))
+
+[i for i in db.unlinked]
 
 # @TODO: Log "after" status and record changes made
 

@@ -4,7 +4,7 @@ import yaml
 import logging
 import uuid
 import time
-import json
+import pickle
 
 import brightway2 as bw
 from bw2data.validate import db_validator
@@ -179,6 +179,8 @@ for i in _create_activities.index:
             "exchanges": []
         }
 
+# @TODO Add in functionality for emission categories, to allow for connections
+# to biosphere3 as well as ecoinvent
 
 # Add exchanges to existing activities
 if not _add_exchanges.empty:
@@ -203,8 +205,7 @@ if not _add_exchanges.empty:
     # overwritten.
     _add_exchanges.activity_code = _add_exchanges.merge(
         _create_activities,
-        on=['activity_database','activity','activity_location'],
-        how='right'
+        on=['activity_database','activity','activity_location']
     ).code
 
     # Filling the exchange codes is done in two steps. First the merge gets us
@@ -232,7 +233,7 @@ if not _add_exchanges.empty:
                 "input": (_add_exchanges.exchange_database[i],
                           _add_exchanges.exchange_code[i]),
                 "unit": _add_exchanges.unit[i],
-                "type": 'Technosphere'
+                "type": _add_exchanges.exchange_type[i],
             }
         )
 
@@ -246,21 +247,31 @@ logging.debug(msg=f'Foreground database created')
 
 # Save a copy of the custom database for future reference
 if flags.get('save_imported_db'):
-    with open('imported_db', 'w') as db_dump:
-        json.dump(_import, db_dump)
+    with open('imported_db.obj', 'wb') as db_dump:
+        pickle.dump(_import, db_dump)
         db_dump.close()
+    _add_exchanges.to_csv('add_exchanges.csv', index=False)
+    _create_activities.to_csv('create_activities.csv', index=False)
 
-# Use built-in Brightway method to validate the custom database before linking
+# Use built-in Brightway method to validate the custom database before linking.
+# If the validation fails, db_validator returns an Exception. In this case
+# the code fails as well and the Exception is written to the log file.
+# If db_validator just returns a copy of the dictionary, then the database
+# validated successfully.
 validate = db_validator(_import)
-if validate is not dict:
+if type(validate) is not dict:
     logging.error(msg=f'Database to import is not valid: {validate}')
     exit(1)
 
-db = bw.Database('new_database')
+# @TODO Automate the creation of a new database based on database names from
+# the input file
+db = bw.Database('newdb')
 
 db.write(_import)
 
-db.apply_strategies()
+logging.info(msg=f'After import, {prj} databases are {bw.databases.items()}')
+
+# @TODO Where does the apply_strategies call happen, and on what kind of object?
 
 db.match_database("biosphere3", fields=('name', 'unit', 'location', 'categories'))
 
@@ -268,7 +279,7 @@ db.match_database("ecoinvent3.7.1 cut-off", fields=('name', 'unit', 'location', 
 
 [i for i in db.unlinked]
 
-# @TODO: Log "after" status and record changes made
+
 
 
 # Methods setup

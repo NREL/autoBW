@@ -5,7 +5,9 @@ project_parameters:
     - ecoinvent3.7.1 cut-off
 
 foreground_db:
+    name: nrel_db
     fg_db_import: import_test.xlsx
+    generate_keys: True 
     link_fg_to:
         biosphere3 : name, unit, location, categories
         ecoinvent3.7.1 cut-off : name, unit, location, reference product

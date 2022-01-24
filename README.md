@@ -23,8 +23,7 @@ Parameters related to autoBW inputs and outputs other than LCI databases.
 
 Parameters used in setting up the Brightway project, including the LCI databases, methods, and functional units.
 
-* name : Project name used to either create a new, blank project or set an existing project as the current project. 
-* databases: A dictionary defining the databases and, if necessary, the locations from which the databases can be imported. 
+* name : Project name used to either create a new, blank project or set an existing project as the current project.
+* databases: A dictionary defining the databases and, if necessary, the locations from which the databases can be imported.
 * methods: A dictionary of LCI method names and keys.
 * functional_units: A dictionary of informal (ie not necessarily matching the exact exchange names in the database) exchange names, with the values being a list where the first element is the exchange key and the second element is the functional unit amount in kg.
-

@@ -1,17 +1,17 @@
 project_parameters:
     name: psh_lca
-    include_databases: 
+    include_databases:
     - biosphere3
     - ecoinvent3.7.1 cut-off
 
 foreground_db:
     name: nrel_db
     fg_db_import: import_test.xlsx
-    generate_keys: True 
+    generate_keys: True
     link_fg_to:
         biosphere3 : name, unit, location, categories
         ecoinvent3.7.1 cut-off : name, unit, location, reference product
-    
+
 
 calculations:
     methods: #define manually or provide search string to pull from DB?
@@ -22,4 +22,3 @@ calculations:
         gasoline : accdd0f59a6ea000a2b3fd21bcc93a15, 75
         jet fuel : accdd0f59a6ea000a2b3fd21bcc93a15, 50
         diesel : accdd0f59a6ea000a2b3fd21bcc93a15, 65
-        

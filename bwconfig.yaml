@@ -1,7 +1,5 @@
 flags:
     create_new_project : True # if False, attempt to set an existing project as current
-    save_imported_db : True # Saves a copy of any imported (customized) foreground databases in a reusable format
-    # @TODO option for sharing projects
 
 fileIO:
     data_directory: C:\Users\rhanes\GitHub\autoBW

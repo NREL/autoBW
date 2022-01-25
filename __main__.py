@@ -1,12 +1,17 @@
+"""
+Created on November 1 2021.
+
+@author: rhanes
+"""
 import argparse
 import os
-import yaml
 import logging
 import time
+import yaml
 
 import brightway2 as bw
 
-from ForegroundDatabase import ForegroundDatabase
+from foreground_database import ForegroundDatabase
 
 # set up arguments for command line running
 parser = argparse.ArgumentParser(description="Execute automatic Brightway LCIA")
@@ -32,7 +37,9 @@ try:
         flags = bwconfig.get("flags", {})
         fileIO = bwconfig.get("fileIO", {})
 except IOError as err:
-    logging.error(msg=f"Could not open {bwconfig_filename} for configuration.")
+    logging.error(
+        msg=f"__main__.py: Could not open {bwconfig_filename} for configuration."
+    )
     exit(1)
 
 try:
@@ -42,7 +49,9 @@ try:
         calcs = caseconfig.get("calculations", {})
         proj_params = caseconfig.get("project_parameters", {})
 except IOError as err:
-    logging.error(msg=f"Could not open {caseconfig_filename} for configuration.")
+    logging.error(
+        msg=f"__main__.py: Could not open {caseconfig_filename} for configuration."
+    )
     exit(1)
 
 # Project setup
@@ -50,15 +59,15 @@ prj = proj_params.get("name")
 
 # If the project already exists, throw an error.
 if flags.get("create_new_project") and prj in list(bw.projects):
-    logging.error(msg=f"Project {prj} already exists.")
+    logging.error(msg=f"__main__.py: Project {prj} already exists.")
     exit(1)
 
 # Instantiate the new project
 bw.projects.set_current(prj)
 
 # Log current project name and directory
-logging.info(msg=f"Current project name is {bw.projects.current}")
-logging.info(msg=f"Current project directory is {bw.projects.dir}")
+logging.info(msg=f"__main__.py: Current project name is {bw.projects.current}")
+logging.info(msg=f"__main__.py: Current project directory is {bw.projects.dir}")
 
 # Default setup step for biosphere database
 # This will only execute if the project is brand new
@@ -66,11 +75,11 @@ bw.bw2setup()
 
 # Previously imported database check
 bw_db_list = [key for key, value in bw.databases.items()]
-logging.info(msg=f"{prj} databases are {bw_db_list}")
+logging.info(msg=f"__main__.py: {prj} databases are {bw_db_list}")
 
 # Import and format any databases that are missing
 db_names = proj_params.get("include_databases")
-if len(db_names) > 0:
+if db_names:
     missing = []
     # If db_names contains database names, check that each of these is
     # imported before proceeding
@@ -78,12 +87,12 @@ if len(db_names) > 0:
         if db_names[i] not in bw_db_list:
             missing.append(db_names[i])
 
-    if len(missing) > 0:
-        logging.error(msg=f"{missing} must be imported before proceeding")
+    if missing:
+        logging.error(msg=f"__main__.py: {missing} must be imported before proceeding")
         exit(1)
 
 else:
-    logging.info(msg=f"No databases specified: using {bw_db_list}")
+    logging.info(msg=f"__main__.py: No databases specified: using {bw_db_list}")
 
 # Get path to file with custom foreground database
 fg_db_file = os.path.join(fileIO.get("data_directory"), foreground.get("fg_db_import"))
@@ -92,7 +101,7 @@ fg_db_file = os.path.join(fileIO.get("data_directory"), foreground.get("fg_db_im
 # created.
 if foreground.get("name") in bw_db_list:
     logging.warning(
-        msg=f"Deleting existing foreground database {foreground.get('name')}"
+        msg=f"__main__.py: Deleting existing foreground database {foreground.get('name')}"
     )
     del bw.databases[foreground.get("name")]
 

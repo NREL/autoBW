@@ -3,6 +3,7 @@ Created on January 20 2022.
 
 @author: rhanes
 """
+import os
 import uuid
 import pickle
 
@@ -16,7 +17,7 @@ from bw2data.validate import db_validator
 
 from data_manager import CreateActivities, AddExchanges, CopyActivities, DeleteExchanges
 
-
+import pdb
 class ForegroundDatabase:
     """
     Create foreground database from imported Excel data.
@@ -26,30 +27,27 @@ class ForegroundDatabase:
     """
 
     def __init__(
-        self,
-        db_name,
-        import_template,
-        generate_keys,
-        logging,
-        project,
-        save_imported_db,
+            self,
+            logging,
+            prj_dict,
+            fg_dict
+            #db_name=foreground.get("name"),
+            #import_template=fg_db_file,
+            #generate_keys=foreground.get("generate_keys"),
+            #logging=logging,
+            #project=prj,
+            #save_imported_db=flags.get("save_imported_db"),
     ):
         """
         Assemble a database to import into Brightway as a dictionary.
 
         Parameters
         ----------
-        db_name : str
+        logging
 
-        import_template: str
+        prj_dict : dict
 
-        generate_keys : bool
-
-        logging : logger object
-
-        project : str
-
-        save_imported_db : bool
+        fg_dict : dict
 
         Returns
         -------
@@ -58,27 +56,34 @@ class ForegroundDatabase:
         # Initialize empty dictionary to hold the assembled database
         self.custom_db = {}
 
+        # Get the path to the XLSX file with importable database information
+        _import_template = fg_dict.get('fg_db_import')
+
+        if not os.path.isfile(_import_template):
+            logging.error(msg=f"{_import_template} is not a file")
+            exit(1)
+
         # Table of empty activities to add to the database. Fill in the
         # database columns with custom database name from the config file.
-        self.create_activities_data = CreateActivities(fpath=import_template).backfill(
-            column="activity_database", value=db_name
+        self.create_activities_data = CreateActivities(fpath=_import_template).backfill(
+            column="activity_database", value=fg_dict.get('db_name')
         )
 
         # Table of exchanges to add to the database. Fill in the database
         # columns with custom database name from the config file.
-        self.add_exchanges_data = AddExchanges(fpath=import_template).backfill(
-            column=["activity_database", "exchange_database"], value=db_name
+        self.add_exchanges_data = AddExchanges(fpath=_import_template).backfill(
+            column=["activity_database", "exchange_database"], value=fg_dict.get('db_name')
         )
 
         # Table of activities to copy to the foreground database from an
         # existing database
-        self.copy_activities_data = CopyActivities(fpath=import_template)
+        self.copy_activities_data = CopyActivities(fpath=_import_template)
 
         # Table of exchanges to remove from the database
-        self.delete_exchanges_data = DeleteExchanges(fpath=import_template)
+        self.delete_exchanges_data = DeleteExchanges(fpath=_import_template)
 
         self.logging = logging
-        self.project = project
+        self.project = prj_dict.get('name')
 
         self.valid = None
 
@@ -96,7 +101,7 @@ class ForegroundDatabase:
             )
             exit(1)
 
-        if generate_keys:
+        if fg_dict.get('generate_keys'):
             # Generate unique activity code with uuid.
             # Because all activities in this DataFrame are new, all of them
             # need newly created codes. This can be done manually within the
@@ -130,12 +135,13 @@ class ForegroundDatabase:
             self.create_activities_data,
             left_on=["exchange_database", "exchange", "activity_location"],
             right_on=["activity_database", "reference_product", "activity_location"],
-            how="left",
+            how="left"
         ).code
+
         self.add_exchanges_data.exchange_code = _new_exchange_codes.fillna(
             ""
         ) + self.add_exchanges_data.exchange_code.fillna("")
-
+        pdb.set_trace()
         # Log the activities to be created and their newly assigned codes
         self.logging.info(
             msg=f"ForegroundDatabase.__init__: Creating activities: "
@@ -202,7 +208,7 @@ class ForegroundDatabase:
         self.validate()
 
         # Save a copy of the custom database for future reference
-        if save_imported_db:
+        if fg_dict.get('save_imported_db'):
             with open("imported_db.obj", "wb") as db_dump:
                 pickle.dump(self.custom_db, db_dump)
                 db_dump.close()

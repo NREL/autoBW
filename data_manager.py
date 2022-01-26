@@ -120,9 +120,6 @@ class Data(pd.DataFrame):
         -------
         DataFrame
         """
-        if filetype not in ["csv", "xlsx"]:
-            raise ValueError(f"DataManager: filetype must be csv or xlsx")
-
         try:
             if filetype == "csv":
                 _df = pd.read_csv(
@@ -143,6 +140,8 @@ class Data(pd.DataFrame):
                     header=header,
                     **kwargs,
                 )
+            else:
+                raise ValueError(f"Filetype must be csv or xlsx")
         except ValueError as _e:
             if _e.__str__() == "Usecols do not match names.":
                 from collections import Counter
@@ -284,7 +283,7 @@ class CreateActivities(Data):
             "name": "reference_product_amount",
             "type": float,
             "index": False,
-            "backfill": None,
+            "backfill": 1.0,
         },
         {
             "name": "reference_product_unit",
@@ -292,7 +291,7 @@ class CreateActivities(Data):
             "index": False,
             "backfill": None,
         },
-        {"name": "std_dev", "type": float, "index": False, "backfill": None},
+        {"name": "std_dev", "type": float, "index": False, "backfill": 0.0},
         {"name": "activity_location", "type": str, "index": False, "backfill": None},
         {"name": "activity_version", "type": float, "index": False, "backfill": None},
         {"name": "code", "type": float, "index": False, "backfill": None},

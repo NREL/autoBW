@@ -3,6 +3,7 @@ Created on January 26 2022.
 
 @author: rhanes
 """
+import sys
 import os
 import yaml
 
@@ -36,22 +37,22 @@ class LocalProject:
         )
 
         try:
-            with open(bwconfig_filename, "r") as _f:
+            with open(bwconfig_filename, "r", encoding="utf-8") as _f:
                 _bwconfig = yaml.load(_f, Loader=yaml.FullLoader)
                 _flags = _bwconfig.get("flags", {})
         except IOError as err:
             logging.error(msg=f"LocalProject: {bwconfig_filename} {err}")
-            exit(1)
+            sys.exit()
 
         try:
-            with open(caseconfig_filename, "r") as _f:
+            with open(caseconfig_filename, "r", encoding="utf-8") as _f:
                 _caseconfig = yaml.load(_f, Loader=yaml.FullLoader)
                 foreground = _caseconfig.get("foreground_db", {})
                 # calcs = caseconfig.get("calculations", {})
                 proj_params = _caseconfig.get("project_parameters", {})
         except IOError as err:
             logging.error(msg=f"LocalProject: {caseconfig_filename} {err}")
-            exit(1)
+            sys.exit()
 
         # If the project already exists, throw an error.
         if _flags.get("create_new_project") and proj_params.get("name") in list(
@@ -60,7 +61,7 @@ class LocalProject:
             logging.error(
                 msg=f"LocalProject: Project {proj_params.get('name')} already exists."
             )
-            exit(1)
+            sys.exit()
 
         # Instantiate the new project
         bw.projects.set_current(proj_params.get("name"))
@@ -94,7 +95,7 @@ class LocalProject:
                 logging.error(
                     msg=f"LocalProject: {_missing} must be imported before proceeding"
                 )
-                exit(1)
+                sys.exit()
 
         else:
             logging.info(

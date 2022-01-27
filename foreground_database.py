@@ -3,6 +3,7 @@ Created on January 20 2022.
 
 @author: rhanes
 """
+import sys
 import os
 import uuid
 import pickle
@@ -51,7 +52,7 @@ class ForegroundDatabase:
 
         if not os.path.isfile(_import_template):
             logging.error(msg=f"{_import_template} is not a file")
-            exit(1)
+            sys.exit()
 
         # Table of empty activities to add to the database. Fill in the
         # database columns with custom database name from the config file.
@@ -87,7 +88,7 @@ class ForegroundDatabase:
                 msg=f"ForegroundDatabase.__init__: Add Exchanges: Missing new activities"
                 f" {_missing_acts}"
             )
-            exit(1)
+            sys.exit()
 
         if fg_dict.get("generate_keys"):
             # Generate unique activity code with uuid.
@@ -244,7 +245,7 @@ class ForegroundDatabase:
                     f"{_sdb} is not in Brightway project {self.project} "
                     f"imported databases"
                 )
-                exit(1)
+                sys.exit()
 
             # Use the source_database column to set the Brighway database being
             # searched
@@ -360,7 +361,7 @@ class ForegroundDatabase:
                 msg=f"ForegroundDatabase.validate: Custom database is not "
                 f"valid: {validate}"
             )
-            exit(1)
+            sys.exit()
         else:
             self.logging.info(
                 msg="ForegroundDatabase.validate: Custom database is valid"

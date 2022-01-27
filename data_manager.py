@@ -10,7 +10,7 @@ Unmodified FPEAM code is available at https://github.com/NREL/fpeam.
 
 @author: rhanes
 """
-
+import sys
 import pandas as pd
 
 
@@ -58,7 +58,7 @@ class Data(pd.DataFrame):
             else self.load(fpath=fpath, columns=columns, sheet=sheet)
         )
 
-        super(Data, self).__init__(data=_df)
+        super().__init__(data=_df)
 
         self.source = fpath
 
@@ -68,11 +68,7 @@ class Data(pd.DataFrame):
             assert _valid is True
         except AssertionError:
             if fpath is not None:
-                raise RuntimeError(
-                    "{} failed validation".format(
-                        __name__,
-                    )
-                )
+                raise RuntimeError(f"{__name__} failed validation")
 
         if backfill:
             for _column in self.COLUMNS:
@@ -114,7 +110,8 @@ class Data(pd.DataFrame):
                 header=header,
             )
         except ValueError as _e:
-            raise ValueError(f"{fpath},{sheet}: {_e}")
+            print(f"{fpath}, {sheet}")
+            raise
 
         else:
             return _df
@@ -141,7 +138,7 @@ class Data(pd.DataFrame):
 
         if not value:
             print(f"DataManager: No backfill value provided for {column}")
-            exit(1)
+            sys.exit()
 
         if isinstance(column, str):
             if self[column].isna().any():
@@ -204,13 +201,13 @@ class Data(pd.DataFrame):
 
         _valid = True
 
-        print("validating %s" % (_name,))
+        print(f"validating {_name}")
 
         if self.empty:
-            print("no data provided for %s" % (_name,))
+            print(f"no data provided for {_name}")
             _valid = False
 
-        print("validated %s" % (_name,))
+        print(f"validated {_name}")
 
         return _valid
 
@@ -222,7 +219,7 @@ class Data(pd.DataFrame):
         """Process exceptions."""
         # process exceptions
         if exc_type is not None:
-            print("%s\n%s\n%s" % (exc_type, exc_val, exc_tb))
+            print(f"{exc_type}\n{exc_val}\n{exc_tb}")
             _out = False
         else:
             _out = self
@@ -266,7 +263,7 @@ class CreateActivities(Data):
         backfill=True,
     ):
         """Initialize Create Activities data frame."""
-        super(CreateActivities, self).__init__(
+        super().__init__(
             fpath=fpath,
             columns=columns,
             sheet="Create Activities",
@@ -302,7 +299,7 @@ class AddExchanges(Data):
         backfill=True,
     ):
         """Initialize Add Exchanges data frame."""
-        super(AddExchanges, self).__init__(
+        super().__init__(
             fpath=fpath,
             columns=columns,
             sheet="Add Exchanges",
@@ -330,7 +327,7 @@ class CopyActivities(Data):
         backfill=True,
     ):
         """Initialize Copy Activities data frame."""
-        super(CopyActivities, self).__init__(
+        super().__init__(
             fpath=fpath,
             columns=columns,
             sheet="Copy Activities",
@@ -361,7 +358,7 @@ class DeleteExchanges(Data):
         backfill=True,
     ):
         """Initialize Delete Exchanges data frame."""
-        super(DeleteExchanges, self).__init__(
+        super().__init__(
             fpath=fpath,
             columns=columns,
             sheet="Delete Exchanges",

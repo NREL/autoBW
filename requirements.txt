@@ -12,4 +12,3 @@ pyyaml~=6.0
 sqlalchemy==1.4.27
 
 utils~=1.0.1
-yaml~=0.2.5

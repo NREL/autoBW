@@ -68,7 +68,8 @@ class Data(pd.DataFrame):
             assert _valid is True
         except AssertionError:
             if fpath is not None:
-                raise RuntimeError(f"{__name__} failed validation")
+                print(f"{__name__} failed validation")
+                raise
 
         if backfill:
             for _column in self.COLUMNS:

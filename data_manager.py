@@ -30,9 +30,7 @@ class Data(pd.DataFrame):
 
     def __init__(
         self,
-        data_frame=None,
         fpath=None,
-        filetype="xlsx",
         columns=None,
         sheet=None,
         backfill=True,
@@ -42,40 +40,34 @@ class Data(pd.DataFrame):
 
         Parameters
         ----------
-        data_frame
-            Initial data frame
-
         fpath
             Filepath location of data to be read in
-
-        filetype
-            String specifying whether the file is in csv or xlsx format
 
         columns
             List of columns to backfill
 
         sheet
-            Name of sheet to read in, if filetype is xlsx
+            Name of sheet to read in
 
         backfill
             Boolean flag: perform backfilling with datatype-specific value
         """
         _df = (
             pd.DataFrame({})
-            if data_frame is None and fpath is None
-            else self.load(fpath=fpath, filetype=filetype, columns=columns, sheet=sheet)
+            if fpath is None
+            else self.load(fpath=fpath, columns=columns, sheet=sheet)
         )
 
         super(Data, self).__init__(data=_df)
 
-        self.source = fpath or "DataFrame"
+        self.source = fpath
 
         _valid = self.validate()
 
         try:
             assert _valid is True
         except AssertionError:
-            if data_frame is not None or fpath is not None:
+            if fpath is not None:
                 raise RuntimeError(
                     "{} failed validation".format(
                         __name__,
@@ -88,7 +80,7 @@ class Data(pd.DataFrame):
                     self.backfill(column=_column["name"], value=_column["backfill"])
 
     @staticmethod
-    def load(fpath, filetype, columns, memory_map=True, header=0, sheet=None, **kwargs):
+    def load(fpath, columns, header=0, sheet=None):
         """
         Load data from a text file at <fpath>. Check and set column names.
 
@@ -99,21 +91,14 @@ class Data(pd.DataFrame):
         fpath: [string]
             file path to CSV file or SQLite database file
 
-        filetype: [string]
-            Specifies whether file to be read in is a CSV ("csv") or XLSX
-            ("xlsx") file.
-
         columns: [dict]
             {name: type, ...}
-
-        memory_map: [bool]
-            load directly to memory for improved performance
 
         header: [int]
             0-based row index containing column names
 
         sheet: [str]
-            If filetype is xlsx, specify the name of the sheet to be read in.
+            Specify the name of the sheet to be read in.
             If no sheet name is provided, the first sheet is read.
 
         Returns
@@ -121,42 +106,15 @@ class Data(pd.DataFrame):
         DataFrame
         """
         try:
-            if filetype == "csv":
-                _df = pd.read_csv(
-                    filepath_or_buffer=fpath,
-                    sep=",",
-                    dtype=columns,
-                    usecols=columns.keys(),
-                    memory_map=memory_map,
-                    header=header,
-                    **kwargs,
-                )
-            elif filetype == "xlsx":
-                _df = pd.read_excel(
-                    io=fpath,
-                    sheet_name=sheet,
-                    dtype=columns,
-                    usecols=columns.keys(),
-                    header=header,
-                    **kwargs,
-                )
-            else:
-                raise ValueError(f"Filetype must be csv or xlsx")
+            _df = pd.read_excel(
+                io=fpath,
+                sheet_name=sheet,
+                dtype=columns,
+                usecols=columns.keys(),
+                header=header,
+            )
         except ValueError as _e:
-            if _e.__str__() == "Usecols do not match names.":
-                from collections import Counter
-
-                _df = pd.read_table(
-                    filepath_or_buffer=fpath,
-                    sep=",",
-                    dtype=columns,
-                    memory_map=memory_map,
-                    header=header,
-                    **kwargs,
-                )
-                _df_columns = Counter(_df.columns)
-                _cols = list(set(columns.keys()) - set(_df_columns))
-                raise ValueError(f"{fpath} missing columns: {_cols}")
+            raise ValueError(f"{fpath},{sheet}: {_e}")
 
         else:
             return _df
@@ -180,6 +138,10 @@ class Data(pd.DataFrame):
         _dataset = str(type(self)).split("'")[1]
 
         _backfilled = False
+
+        if not value:
+            print(f"DataManager: No backfill value provided for {column}")
+            exit(1)
 
         if isinstance(column, str):
             if self[column].isna().any():
@@ -291,7 +253,7 @@ class CreateActivities(Data):
             "index": False,
             "backfill": None,
         },
-        {"name": "std_dev", "type": float, "index": False, "backfill": 0.0},
+        {"name": "std_dev", "type": float, "index": False, "backfill": None},
         {"name": "activity_location", "type": str, "index": False, "backfill": None},
         {"name": "activity_version", "type": float, "index": False, "backfill": None},
         {"name": "code", "type": float, "index": False, "backfill": None},
@@ -299,16 +261,13 @@ class CreateActivities(Data):
 
     def __init__(
         self,
-        data_frame=None,
         fpath=None,
         columns={d["name"]: d["type"] for d in COLUMNS},
         backfill=True,
     ):
         """Initialize Create Activities data frame."""
         super(CreateActivities, self).__init__(
-            data_frame=data_frame,
             fpath=fpath,
-            filetype="xlsx",
             columns=columns,
             sheet="Create Activities",
             backfill=backfill,
@@ -338,16 +297,13 @@ class AddExchanges(Data):
 
     def __init__(
         self,
-        data_frame=None,
         fpath=None,
         columns={d["name"]: d["type"] for d in COLUMNS},
         backfill=True,
     ):
         """Initialize Add Exchanges data frame."""
         super(AddExchanges, self).__init__(
-            data_frame=data_frame,
             fpath=fpath,
-            filetype="xlsx",
             columns=columns,
             sheet="Add Exchanges",
             backfill=backfill,
@@ -369,16 +325,13 @@ class CopyActivities(Data):
 
     def __init__(
         self,
-        data_frame=None,
         fpath=None,
         columns={d["name"]: d["type"] for d in COLUMNS},
         backfill=True,
     ):
         """Initialize Copy Activities data frame."""
         super(CopyActivities, self).__init__(
-            data_frame=data_frame,
             fpath=fpath,
-            filetype="xlsx",
             columns=columns,
             sheet="Copy Activities",
             backfill=backfill,
@@ -403,16 +356,13 @@ class DeleteExchanges(Data):
 
     def __init__(
         self,
-        data_frame=None,
         fpath=None,
         columns={d["name"]: d["type"] for d in COLUMNS},
         backfill=True,
     ):
         """Initialize Delete Exchanges data frame."""
         super(DeleteExchanges, self).__init__(
-            data_frame=data_frame,
             fpath=fpath,
-            filetype="xlsx",
             columns=columns,
             sheet="Delete Exchanges",
             backfill=backfill,

@@ -10,14 +10,15 @@ import brightway2 as bw
 
 from foreground_database import ForegroundDatabase
 
+
 class LocalProject:
-    """
-    Create and set up a local Brightway project.
-    """
+    """Create and set up a local Brightway project."""
 
     def __init__(self, parser, logging):
         """
         Initialize the project.
+
+        Handles file IO, former database cleanup, and new database creation.
 
         Parameters
         ----------
@@ -25,95 +26,106 @@ class LocalProject:
 
         logging
 
-
-        Returns
-        -------
         """
         # read in config (YAML) file with error handling; get variable groups
-        bwconfig_filename = os.path.join(parser.parse_args().data, parser.parse_args().bwconfig)
+        bwconfig_filename = os.path.join(
+            parser.parse_args().data, parser.parse_args().bwconfig
+        )
         caseconfig_filename = os.path.join(
             parser.parse_args().data, parser.parse_args().caseconfig
         )
 
         try:
-            with open(bwconfig_filename, "r") as f:
-                bwconfig = yaml.load(f, Loader=yaml.FullLoader)
-                flags = bwconfig.get("flags", {})
+            with open(bwconfig_filename, "r") as _f:
+                _bwconfig = yaml.load(_f, Loader=yaml.FullLoader)
+                _flags = _bwconfig.get("flags", {})
         except IOError as err:
-            logging.error(
-                msg=f"LocalProject: {bwconfig_filename} {err}"
-            )
+            logging.error(msg=f"LocalProject: {bwconfig_filename} {err}")
             exit(1)
 
         try:
-            with open(caseconfig_filename, "r") as f:
-                caseconfig = yaml.load(f, Loader=yaml.FullLoader)
-                foreground = caseconfig.get("foreground_db", {})
-                #calcs = caseconfig.get("calculations", {})
-                proj_params = caseconfig.get("project_parameters", {})
+            with open(caseconfig_filename, "r") as _f:
+                _caseconfig = yaml.load(_f, Loader=yaml.FullLoader)
+                foreground = _caseconfig.get("foreground_db", {})
+                # calcs = caseconfig.get("calculations", {})
+                proj_params = _caseconfig.get("project_parameters", {})
         except IOError as err:
+            logging.error(msg=f"LocalProject: {caseconfig_filename} {err}")
+            exit(1)
+
+        # If the project already exists, throw an error.
+        if _flags.get("create_new_project") and proj_params.get("name") in list(
+            bw.projects
+        ):
             logging.error(
-                msg=f"LocalProject: {caseconfig_filename} {err}"
+                msg=f"LocalProject: Project {proj_params.get('name')} already exists."
             )
             exit(1)
 
-        # Project setup
-        prj = proj_params.get("name")
-
-        # If the project already exists, throw an error.
-        if flags.get("create_new_project") and prj in list(bw.projects):
-            logging.error(msg=f"__main__.py: Project {prj} already exists.")
-            exit(1)
-
         # Instantiate the new project
-        bw.projects.set_current(prj)
+        bw.projects.set_current(proj_params.get("name"))
 
         # Log current project name and directory
-        logging.info(msg=f"__main__.py: Current project name is {bw.projects.current}")
-        logging.info(msg=f"__main__.py: Current project directory is {bw.projects.dir}")
+        logging.info(msg=f"LocalProject: Current project name is {bw.projects.current}")
+        logging.info(
+            msg=f"LocalProject: Current project directory is {bw.projects.dir}"
+        )
 
         # Default setup step for biosphere database
         # This will only execute if the project is brand new
         bw.bw2setup()
 
         # Previously imported database check
-        bw_db_list = [key for key, value in bw.databases.items()]
-        logging.info(msg=f"__main__.py: {prj} databases are {bw_db_list}")
+        _bw_db_list = [key for key, value in bw.databases.items()]
+        logging.info(
+            msg=f"LocalProject: {proj_params.get('name')} databases are {_bw_db_list}"
+        )
 
         # Import and format any databases that are missing
-        db_names = proj_params.get("include_databases")
-        if db_names:
-            missing = []
-            # If db_names contains database names, check that each of these is
-            # imported before proceeding
-            for i in range(len(db_names)):
-                if db_names[i] not in bw_db_list:
-                    missing.append(db_names[i])
+        if proj_params.get("include_databases"):
+            _missing = []
+            # If databases to include have been specified, check that each of these is imported
+            # before proceeding
+            for _i in range(len(proj_params.get("include_databases"))):
+                if proj_params.get("include_databases")[_i] not in _bw_db_list:
+                    _missing.append(proj_params.get("include_databases")[_i])
 
-            if missing:
-                logging.error(msg=f"__main__.py: {missing} must be imported before proceeding")
+            if _missing:
+                logging.error(
+                    msg=f"LocalProject: {_missing} must be imported before proceeding"
+                )
                 exit(1)
 
         else:
-            logging.info(msg=f"__main__.py: No databases specified: using {bw_db_list}")
+            logging.info(
+                msg=f"LocalProject: No databases specified: using {_bw_db_list}"
+            )
 
         # Find and delete any foreground databases with the same name as the one being
         # created.
-        if foreground.get("name") in bw_db_list:
+        if foreground.get("name") in _bw_db_list:
             logging.warning(
-                msg=f"__main__.py: Deleting existing foreground database {foreground.get('name')}"
+                msg=f"LocalProject: Deleting existing foreground database {foreground.get('name')}"
             )
             del bw.databases[foreground.get("name")]
 
-            bw_db_list = [key for key, value in bw.databases.items()]
-            logging.info(msg=f"{prj} databases are {bw_db_list}")
+        bw.Database(foreground.get("name")).write(data={})
 
-        # Initialize blank foreground database for writing
-        bw.Database(foreground.get("name"))
-
-        # Assemble database for import, validate, and optionally save a copy
-        ForegroundDatabase(
-            logging=logging,
-            prj_dict=proj_params,
-            fg_dict=foreground
+        _bw_db_list = [key for key, value in bw.databases.items()]
+        logging.info(
+            msg=f"LocalProject: {proj_params.get('name')} databases are {_bw_db_list}"
         )
+
+        # Assemble database for import, validate, and optionally save a copy in human-readable
+        # format
+        ForegroundDatabase(logging=logging, prj_dict=proj_params, fg_dict=foreground)
+
+    @staticmethod
+    def calculations():
+        """Perform standard LCIA calculations."""
+        return None
+
+    @staticmethod
+    def visualization():
+        """Create standard impact visualizations."""
+        return None

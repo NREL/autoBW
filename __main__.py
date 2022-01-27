@@ -22,16 +22,5 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     LocalProject(parser=PARSER, logging=logging)
-
-# Methods setup
-
-
-# Calculation setup
-
-
-# Execute LCIA and gather raw results
-
-
-# Format results and generate diagnostic plots

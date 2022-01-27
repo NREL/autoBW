@@ -3,6 +3,8 @@ Created on January 20 2022.
 
 @author: rhanes
 """
+import sys
+import os
 import uuid
 import pickle
 
@@ -11,6 +13,7 @@ import brightway2 as bw
 
 import bw2data
 from bw2data.validate import db_validator
+from peewee import DoesNotExist
 
 # from bw2io import CSVImporter
 
@@ -25,31 +28,17 @@ class ForegroundDatabase:
     database. Activities and exchanges can be copied to the foreground database from ecoinvent.
     """
 
-    def __init__(
-        self,
-        db_name,
-        import_template,
-        generate_keys,
-        logging,
-        project,
-        save_imported_db,
-    ):
+    def __init__(self, logging, prj_dict, fg_dict):
         """
         Assemble a database to import into Brightway as a dictionary.
 
         Parameters
         ----------
-        db_name : str
+        logging
 
-        import_template: str
+        prj_dict : dict
 
-        generate_keys : bool
-
-        logging : logger object
-
-        project : str
-
-        save_imported_db : bool
+        fg_dict : dict
 
         Returns
         -------
@@ -58,29 +47,34 @@ class ForegroundDatabase:
         # Initialize empty dictionary to hold the assembled database
         self.custom_db = {}
 
+        # Get the path to the XLSX file with importable database information
+        _import_template = fg_dict.get("fg_db_import")
+
+        if not os.path.isfile(_import_template):
+            logging.error(msg=f"{_import_template} is not a file")
+            sys.exit()
+
         # Table of empty activities to add to the database. Fill in the
         # database columns with custom database name from the config file.
-        self.create_activities_data = CreateActivities(fpath=import_template).backfill(
-            column="activity_database", value=db_name
+        self.create_activities_data = CreateActivities(fpath=_import_template).backfill(
+            column="activity_database", value=fg_dict.get("name")
         )
 
         # Table of exchanges to add to the database. Fill in the database
         # columns with custom database name from the config file.
-        self.add_exchanges_data = AddExchanges(fpath=import_template).backfill(
-            column=["activity_database", "exchange_database"], value=db_name
+        self.add_exchanges_data = AddExchanges(fpath=_import_template).backfill(
+            column=["activity_database", "exchange_database"], value=fg_dict.get("name")
         )
 
         # Table of activities to copy to the foreground database from an
         # existing database
-        self.copy_activities_data = CopyActivities(fpath=import_template)
+        self.copy_activities_data = CopyActivities(fpath=_import_template)
 
         # Table of exchanges to remove from the database
-        self.delete_exchanges_data = DeleteExchanges(fpath=import_template)
+        self.delete_exchanges_data = DeleteExchanges(fpath=_import_template)
 
         self.logging = logging
-        self.project = project
-
-        self.valid = None
+        self.project = prj_dict.get("name")
 
         # If activities listed under Add Exchanges are not also listed under
         # Create Activities, throw an error
@@ -94,9 +88,9 @@ class ForegroundDatabase:
                 msg=f"ForegroundDatabase.__init__: Add Exchanges: Missing new activities"
                 f" {_missing_acts}"
             )
-            exit(1)
+            sys.exit()
 
-        if generate_keys:
+        if fg_dict.get("generate_keys"):
             # Generate unique activity code with uuid.
             # Because all activities in this DataFrame are new, all of them
             # need newly created codes. This can be done manually within the
@@ -132,6 +126,7 @@ class ForegroundDatabase:
             right_on=["activity_database", "reference_product", "activity_location"],
             how="left",
         ).code
+
         self.add_exchanges_data.exchange_code = _new_exchange_codes.fillna(
             ""
         ) + self.add_exchanges_data.exchange_code.fillna("")
@@ -202,7 +197,7 @@ class ForegroundDatabase:
         self.validate()
 
         # Save a copy of the custom database for future reference
-        if save_imported_db:
+        if fg_dict.get("save_imported_db"):
             with open("imported_db.obj", "wb") as db_dump:
                 pickle.dump(self.custom_db, db_dump)
                 db_dump.close()
@@ -216,7 +211,7 @@ class ForegroundDatabase:
         # None of the exchanges or activities in the custom database can have any database assigned
         # to them other than the custom one (ie activities copied from ecoinvent must have the
         # custom database name attached)
-        #bw.Database(db_name).write(self.custom_db)
+        # bw.Database(db_name).write(self.custom_db)
 
         # @TODO Apply strategies?
 
@@ -236,7 +231,7 @@ class ForegroundDatabase:
             self.logging.warning(
                 msg="ForegroundDatabase.copy_activities: No activities to copy"
             )
-            pass
+            return None
 
         _dblen = len(self.custom_db)
 
@@ -250,7 +245,7 @@ class ForegroundDatabase:
                     f"{_sdb} is not in Brightway project {self.project} "
                     f"imported databases"
                 )
-                pass
+                sys.exit()
 
             # Use the source_database column to set the Brighway database being
             # searched
@@ -265,32 +260,29 @@ class ForegroundDatabase:
                 try:
                     _act = _bwdb.get(_row[1]["activity_code"])
 
-                except:
-                    # It's not good practice to have a generic except clause,
-                    # but the actual exception is internal to Brightway. This
-                    # does catch errors in either the database or the activity
-                    # code.
+                    # If the activity exists, use a separate method to
+                    # format the ecoinvent information for addition to the
+                    # custom database.
+                    _act_to_add = self.ecoinvent_translator(_act)
 
+                    self.custom_db[_act_to_add[0]] = _act_to_add[1]
+
+                except DoesNotExist:
                     # Log a warning if the activity_code doesn't exist, but
                     # proceed with processing the rest of the activities to
                     # copy
                     self.logging.warning(
-                        msg=f"ForegroundDatabase.copy_activities: {_row[0]} "
-                        f"({_row[1]}) not found in {_sdb}"
+                        msg=f"ForegroundDatabase.copy_activities: {_row[1]['activity']} "
+                        f"({_row[1]['activity_code']}) not found in {_sdb}"
                     )
                     _act = None
-
-                # If the activity exists, use a separate method to
-                # format the ecoinvent information for addition to the
-                # custom database.
-                _act_to_add = self.ecoinvent_translator(_act)
-
-                self.custom_db[_act_to_add[0]] = _act_to_add[1]
 
         self.logging.info(
             msg=f"ForegroundDatabase.copy_activities: {len(self.custom_db) - _dblen} activities "
             f"copied to custom database"
         )
+
+        return None
 
     def ecoinvent_translator(self, activity: bw2data.backends.peewee.proxies.Activity):
         """
@@ -307,7 +299,7 @@ class ForegroundDatabase:
         in dictionary (pre-import) format.
         """
         if activity is None:
-            pass
+            return None, None
 
         # Assemble the tuple that identifies this activity
         _key = (activity["database"], activity["code"])
@@ -363,17 +355,14 @@ class ForegroundDatabase:
         file. If db_validator just returns a copy of the dictionary, then the
         database validated successfully and no value is returned.
         """
-
         validate = db_validator(self.custom_db)
-        if type(validate) is not dict:
-            self.valid = False
+        if not isinstance(validate, dict):
             self.logging.error(
                 msg=f"ForegroundDatabase.validate: Custom database is not "
                 f"valid: {validate}"
             )
-            exit(1)
+            sys.exit()
         else:
-            self.valid = True
             self.logging.info(
                 msg="ForegroundDatabase.validate: Custom database is valid"
             )

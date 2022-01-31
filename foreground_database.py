@@ -28,7 +28,7 @@ class ForegroundDatabase:
     database. Activities and exchanges can be copied to the foreground database from ecoinvent.
     """
 
-    def __init__(self, logging, prj_dict, fg_dict, fileIO):
+    def __init__(self, logging, prj_dict, fg_dict, file_io):
         """
         Assemble a database to import into Brightway as a dictionary.
 
@@ -40,7 +40,7 @@ class ForegroundDatabase:
 
         fg_dict : dict
 
-        fileIO : dict
+        file_io : dict
             Dictionary defining the primary data directory.
 
         Returns
@@ -202,17 +202,17 @@ class ForegroundDatabase:
         # Save a copy of the custom database for future reference
         if fg_dict.get("save_db", True):
             with open(
-                os.path.join(fileIO.get("data_directory"), "imported_db.obj"), "wb"
+                os.path.join(file_io.get("data_directory"), "imported_db.obj"), "wb"
             ) as db_dump:
                 pickle.dump(self.custom_db, db_dump)
                 db_dump.close()
             self.add_exchanges_data.to_csv(
-                os.path.join(fileIO.get("data_directory"), "add_exchanges_data.csv"),
+                os.path.join(file_io.get("data_directory"), "add_exchanges_data.csv"),
                 index=False,
             )
             self.create_activities_data.to_csv(
                 os.path.join(
-                    fileIO.get("data_directory"), "create_activities_data.csv"
+                    file_io.get("data_directory"), "create_activities_data.csv"
                 ),
                 index=False,
             )

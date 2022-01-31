@@ -123,7 +123,7 @@ class LocalProject:
             logging=logging,
             prj_dict=proj_params,
             fg_dict=foreground,
-            fileIO=_bwconfig.get("fileIO"),
+            file_io=_bwconfig.get("fileIO"),
         )
 
     @staticmethod

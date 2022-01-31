@@ -119,7 +119,12 @@ class LocalProject:
 
         # Assemble database for import, validate, and optionally save a copy in human-readable
         # format
-        ForegroundDatabase(logging=logging, prj_dict=proj_params, fg_dict=foreground)
+        ForegroundDatabase(
+            logging=logging,
+            prj_dict=proj_params,
+            fg_dict=foreground,
+            fileIO=_bwconfig.get("fileIO"),
+        )
 
     @staticmethod
     def calculations():

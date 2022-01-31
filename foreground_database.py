@@ -28,7 +28,7 @@ class ForegroundDatabase:
     database. Activities and exchanges can be copied to the foreground database from ecoinvent.
     """
 
-    def __init__(self, logging, prj_dict, fg_dict):
+    def __init__(self, logging, prj_dict, fg_dict, fileIO):
         """
         Assemble a database to import into Brightway as a dictionary.
 
@@ -39,6 +39,9 @@ class ForegroundDatabase:
         prj_dict : dict
 
         fg_dict : dict
+
+        fileIO : dict
+            Dictionary defining the primary data directory.
 
         Returns
         -------
@@ -188,7 +191,7 @@ class ForegroundDatabase:
                 }
             )
 
-        self.copy_activities()
+        self.copy_activities(to_db=fg_dict.get("name"))
 
         self.logging.info(msg="ForegroundDatabase.__init__: Custom database assembled")
 
@@ -197,27 +200,31 @@ class ForegroundDatabase:
         self.validate()
 
         # Save a copy of the custom database for future reference
-        if fg_dict.get("save_imported_db"):
-            with open("imported_db.obj", "wb") as db_dump:
+        if fg_dict.get("save_db", True):
+            with open(
+                os.path.join(fileIO.get("data_directory"), "imported_db.obj"), "wb"
+            ) as db_dump:
                 pickle.dump(self.custom_db, db_dump)
                 db_dump.close()
-            self.add_exchanges_data.to_csv("add_exchanges_data.csv", index=False)
+            self.add_exchanges_data.to_csv(
+                os.path.join(fileIO.get("data_directory"), "add_exchanges_data.csv"),
+                index=False,
+            )
             self.create_activities_data.to_csv(
-                "create_activities_data.csv", index=False
+                os.path.join(
+                    fileIO.get("data_directory"), "create_activities_data.csv"
+                ),
+                index=False,
             )
 
-        # @TODO Write the custom database so it's usable by Brightway
-        # @TODO Write the custom database so it's usable by Brightway
-        # None of the exchanges or activities in the custom database can have any database assigned
-        # to them other than the custom one (ie activities copied from ecoinvent must have the
-        # custom database name attached)
-        # bw.Database(db_name).write(self.custom_db)
+        # Write the custom database so it's usable by Brightway
+        bw.Database(fg_dict.get("name")).write(self.custom_db)
 
         # @TODO Apply strategies?
 
         # @TODO Link to existing databases
 
-    def copy_activities(self):
+    def copy_activities(self, to_db: str):
         """
         Copy activities and exchanges from an existing database to a custom database.
 
@@ -226,6 +233,11 @@ class ForegroundDatabase:
         format the data for inclusion in the custom database, and copy the
         data to the custom database. Any activities that are listed for copying
         but don't exist in the source database are skipped with a warning.
+
+        Parameters
+        ----------
+        to_db : str
+            Name of
         """
         if self.copy_activities_data.empty:
             self.logging.warning(
@@ -263,7 +275,7 @@ class ForegroundDatabase:
                     # If the activity exists, use a separate method to
                     # format the ecoinvent information for addition to the
                     # custom database.
-                    _act_to_add = self.ecoinvent_translator(_act)
+                    _act_to_add = self.ecoinvent_translator(activity=_act, to_db=to_db)
 
                     self.custom_db[_act_to_add[0]] = _act_to_add[1]
 
@@ -284,13 +296,18 @@ class ForegroundDatabase:
 
         return None
 
-    def ecoinvent_translator(self, activity: bw2data.backends.peewee.proxies.Activity):
+    def ecoinvent_translator(
+        self, activity: bw2data.backends.peewee.proxies.Activity, to_db: str
+    ):
         """
         Translate an ecoinvent activity with exchanges into the custom database format.
 
         Parameters
         ----------
         activity : bw2data.backends.peewee.proxies.Activity
+
+        to_db : str
+            Name of the database to which the ecoinvent activity is being copied
 
         Returns
         ---------
@@ -302,7 +319,7 @@ class ForegroundDatabase:
             return None, None
 
         # Assemble the tuple that identifies this activity
-        _key = (activity["database"], activity["code"])
+        _key = (to_db, activity["code"])
 
         # Create the activity dictionary structure without exchange information
         _value = {

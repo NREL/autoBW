@@ -5,7 +5,7 @@ project_parameters:
     - ecoinvent3.7.1 cut-off
 
 foreground_db:
-    name: fake1
+    name: nrel_db
     fg_db_import: C:/Users/rhanes/GitHub/autoBW/import_test.xlsx
     generate_keys: True
     save_db: True

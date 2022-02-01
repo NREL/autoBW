@@ -35,10 +35,28 @@ class ForegroundDatabase:
         Parameters
         ----------
         logging
+            logger object for writing status messages
 
         prj_dict : dict
+            Dictionary of project-level parameters.
+            name : str
+                Name of local Brightway project
+            include_databases : list
+                List of existing Brightway databases that must be in the local project.
 
         fg_dict : dict
+            Dictionary of database-level parameters.
+            name : str
+                Name of foreground database to create
+            fg_db_import : path,
+                Path to file with database information
+            generate_keys : Boolean
+                Whether to generate new activity keys or use the ones from the database
+                file
+            save_db : Boolean
+                Whether to save a copy of the database in two CSV files and one pickled object
+            link_fg_to : dict
+                Dictionary of existing database names and columns to link on.
 
         file_io : dict
             Dictionary defining the primary data directory.
@@ -355,13 +373,13 @@ class ForegroundDatabase:
                 "information"
             )
 
-        # Assemble tuples with the activity_database and activity_code to
+        # @TODO Assemble tuples with the activity_database and activity_code to
         # access the activity in self.custom_db
 
-        # Assemble the activity_database, exchange_code tuple to identify the
+        # @TODO Assemble the activity_database, exchange_code tuple to identify the
         # exchange to delete
 
-        # Remove the exchange from the activity
+        # @TODO Remove the exchange from the activity
 
     def validate(self):
         """

@@ -110,15 +110,17 @@ class LocalProject:
             )
             del bw.databases[foreground.get("name")]
 
+        # Create a new blank database to hold the one being created
         bw.Database(foreground.get("name")).write(data={})
 
+        # Log the updated list of databases in this Brightway project
         _bw_db_list = [key for key, value in bw.databases.items()]
         logging.info(
             msg=f"LocalProject: {proj_params.get('name')} databases are {_bw_db_list}"
         )
 
-        # Assemble database for import, validate, and optionally save a copy in human-readable
-        # format
+        # Assemble database for import, validate the database, and optionally save a copy for
+        # later use
         ForegroundDatabase(
             logging=logging,
             prj_dict=proj_params,

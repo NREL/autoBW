@@ -2,15 +2,16 @@ project_parameters:
     name: psh_lca
     include_databases:
     - biosphere3
+    - ecoinvent3.8 cut-off
     - ecoinvent3.7.1 cut-off
 
 foreground_db:
-    name: nrel_db
-    fg_db_import: C:/Users/rhanes/GitHub/autoBW/import_test.xlsx
+    name: nrel psh
+    fg_db_import: C:/Users/rhanes/GitHub/autoBW/inv_import_V1.xlsx
     generate_keys: True
     save_db: True
     link_fg_to:
-        biosphere3 : name, unit, location, categories
+        biosphere3 : name, unit, categories
         ecoinvent3.7.1 cut-off : name, unit, location, reference product
 
 

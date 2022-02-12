@@ -1,5 +1,5 @@
 flags:
-    create_new_project : True # if False, attempt to set an existing project as current
+    create_new_project : False # if False, attempt to set an existing project as current
 
 fileIO:
     data_directory: C:\Users\rhanes\GitHub\autoBW

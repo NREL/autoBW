@@ -139,7 +139,7 @@ class Data(pd.DataFrame):
 
         if not value:
             print(f"DataManager: No backfill value provided for {column}")
-            sys.exit()
+            sys.exit(1)
 
         if isinstance(column, str):
             if self[column].isna().any():
@@ -237,6 +237,7 @@ class CreateActivities(Data):
 
     COLUMNS = (
         {"name": "activity_database", "type": str, "index": False, "backfill": None},
+        {"name": "activity_type", "type": str, "index": False, "backfill": None},
         {"name": "activity", "type": str, "index": False, "backfill": None},
         {"name": "reference_product", "type": str, "index": False, "backfill": None},
         {
@@ -255,6 +256,7 @@ class CreateActivities(Data):
         {"name": "activity_location", "type": str, "index": False, "backfill": None},
         {"name": "activity_version", "type": float, "index": False, "backfill": None},
         {"name": "code", "type": float, "index": False, "backfill": None},
+        {"name": "notes", "type": str, "index": False, "backfill": None},
     )
 
     def __init__(
@@ -319,6 +321,7 @@ class CopyActivities(Data):
         {"name": "source_database", "type": str, "index": True, "backfill": None},
         {"name": "activity", "type": str, "index": False, "backfill": None},
         {"name": "activity_code", "type": str, "index": False, "backfill": None},
+        {"name": "destination_database", "type": str, "index": False, "backfill": None},
     )
 
     def __init__(
@@ -350,6 +353,7 @@ class DeleteExchanges(Data):
         {"name": "exchange_database", "type": str, "index": False, "backfill": None},
         {"name": "exchange", "type": str, "index": False, "backfill": None},
         {"name": "exchange_code", "type": str, "index": False, "backfill": None},
+        {"name": "notes", "type": str, "index": False, "backfill": None},
     )
 
     def __init__(

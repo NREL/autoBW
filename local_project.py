@@ -55,7 +55,9 @@ class LocalProject:
             sys.exit(1)
 
         # If the project already exists, throw an error.
-        if _flags.get("create_new_project") and proj_params.get("name") in [i[0] for i in bw.projects.report()]:
+        if _flags.get("create_new_project") and proj_params.get("name") in [
+            i[0] for i in bw.projects.report()
+        ]:
             logging.error(
                 msg=f"LocalProject: Project {proj_params.get('name')} already exists."
             )

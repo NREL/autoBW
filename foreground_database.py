@@ -19,7 +19,6 @@ from peewee import DoesNotExist
 # from bw2io import CSVImporter
 
 from data_manager import CreateActivities, AddExchanges, CopyActivities, DeleteExchanges
-import pdb
 
 
 class ForegroundDatabase:
@@ -225,7 +224,8 @@ class ForegroundDatabase:
                 )
             except KeyError:
                 self.logging.warning(
-                    msg=f"ForegroundDatabase.__init__: {self.add_exchanges_data.activity[i]} not found in database"
+                    msg=f"ForegroundDatabase.__init__: {self.add_exchanges_data.activity[i]} "
+                    "not found in database"
                 )
 
         self.logging.info(msg="ForegroundDatabase.__init__: Custom database assembled")
@@ -255,9 +255,9 @@ class ForegroundDatabase:
         # Write the custom database so it's usable by Brightway
         try:
             bw.Database(fg_dict.get("name")).write(self.custom_db)
-        except KeyError as e:
+        except KeyError as _e:
             self.logging.warning(
-                msg=f"ForegroundDatabase.__init__: KeyError on database write: {e}"
+                msg=f"ForegroundDatabase.__init__: KeyError on database write: {_e}"
             )
 
     def copy_activities(self, to_db: str):
@@ -394,18 +394,23 @@ class ForegroundDatabase:
         # Within every activity that needs to have exchanges deleted,
         for _line in self.delete_exchanges_data.iterrows():
             try:
-                # Use a tuple with the activity_database and activity_code to access the activity and its exchanges in self.custom_db.
-                # The exchanges for the activity are a list of dictionaries. Inside each dictionary is a key 'input'.
-                # This key value must be matched to the exchange_database and exchange_code from the data frame.
+                # Use a tuple with the activity_database and activity_code
+                # to access the activity and its
+                # exchanges in self.custom_db.
+                # The exchanges for the activity are a list of dictionaries.
+                # Inside each dictionary is a key 'input'.
+                # This key value must be matched to the exchange_database and
+                # exchange_code from the data frame.
                 _del_ind = [
                     _ex["input"]
                     for _ex in self.custom_db[
                         (_line[1].activity_database, _line[1].activity_code.strip())
                     ]["exchanges"]
                 ].index((_line[1].exchange_database, _line[1].exchange_code.strip()))
-            except ValueError as e:
-                # If the exchanges does not exist, log a warning that includes information on the missing exchange
-                self.logging.warning(msg=f"ForegroundDatabase.delete_exchanges: {e}")
+            except ValueError as _e:
+                # If the exchanges does not exist, log a warning that includes information on
+                # the missing exchange
+                self.logging.warning(msg=f"ForegroundDatabase.delete_exchanges: {_e}")
                 _del_ind = None
 
             # If the exchange exists,
@@ -416,7 +421,8 @@ class ForegroundDatabase:
                 ]["exchanges"].pop(_del_ind)
                 # Record the exchange that was removed
                 self.logging.info(
-                    msg=f"ForegroundDatabase.delete_exchanges: Removed {_line[1].exchange} from {_line[1].activity}"
+                    msg="ForegroundDatabase.delete_exchanges: Removed "
+                    f"{_line[1].exchange} from {_line[1].activity}"
                 )
 
     def validate(self):

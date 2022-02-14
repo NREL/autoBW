@@ -9,6 +9,7 @@ import uuid
 import pickle
 
 import pandas as pd
+import numpy as np
 import brightway2 as bw
 
 import bw2data
@@ -18,6 +19,7 @@ from peewee import DoesNotExist
 # from bw2io import CSVImporter
 
 from data_manager import CreateActivities, AddExchanges, CopyActivities, DeleteExchanges
+import pdb
 
 
 class ForegroundDatabase:
@@ -73,11 +75,20 @@ class ForegroundDatabase:
 
         if not os.path.isfile(_import_template):
             logging.error(msg=f"{_import_template} is not a file")
-            sys.exit()
+            sys.exit(1)
 
         # Table of empty activities to add to the database. Fill in the
         # database columns with custom database name from the config file.
         self.create_activities_data = CreateActivities(fpath=_import_template).backfill(
+            column="activity_database", value=fg_dict.get("name")
+        )
+
+        # Table of activities to copy to the foreground database from an
+        # existing database
+        self.copy_activities_data = CopyActivities(fpath=_import_template)
+
+        # Table of exchanges to remove from the database
+        self.delete_exchanges_data = DeleteExchanges(fpath=_import_template).backfill(
             column="activity_database", value=fg_dict.get("name")
         )
 
@@ -87,29 +98,29 @@ class ForegroundDatabase:
             column=["activity_database", "exchange_database"], value=fg_dict.get("name")
         )
 
-        # Table of activities to copy to the foreground database from an
-        # existing database
-        self.copy_activities_data = CopyActivities(fpath=_import_template)
-
-        # Table of exchanges to remove from the database
-        self.delete_exchanges_data = DeleteExchanges(fpath=_import_template)
-
         self.logging = logging
         self.project = prj_dict.get("name")
 
         # If activities listed under Add Exchanges are not also listed under
         # Create Activities, throw an error
+
         _missing_acts = [
             _
             for _ in self.add_exchanges_data.activity.unique()
-            if _ not in self.create_activities_data.activity.unique()
+            if _
+            not in np.concatenate(
+                (
+                    self.create_activities_data.activity.unique(),
+                    self.copy_activities_data.activity.unique(),
+                )
+            )
         ]
         if _missing_acts:
             self.logging.error(
-                msg=f"ForegroundDatabase.__init__: Add Exchanges: Missing new activities"
+                msg=f"ForegroundDatabase.__init__: Missing created or copied activities"
                 f" {_missing_acts}"
             )
-            sys.exit()
+            sys.exit(1)
 
         if fg_dict.get("generate_keys"):
             # Generate unique activity code with uuid.
@@ -148,9 +159,9 @@ class ForegroundDatabase:
             how="left",
         ).code
 
-        self.add_exchanges_data.exchange_code = _new_exchange_codes.fillna(
+        self.add_exchanges_data.exchange_code = _new_exchange_codes.astype(str).fillna(
             ""
-        ) + self.add_exchanges_data.exchange_code.fillna("")
+        ) + self.add_exchanges_data.exchange_code.astype(str).fillna("")
 
         # Log the activities to be created and their newly assigned codes
         self.logging.info(
@@ -158,7 +169,7 @@ class ForegroundDatabase:
             f"{self.create_activities_data.activity.values.tolist()}"
         )
         self.logging.info(
-            msg=f"ForegroundDatabase.__init__: Creating activity codes: "
+            msg=f"ForegroundDatabase.__init__: Adding activity codes: "
             f"{self.create_activities_data.code.values.tolist()}"
         )
 
@@ -181,35 +192,41 @@ class ForegroundDatabase:
                 "exchanges": [],
             }
 
-        # @TODO Add in functionality for emission categories, to allow for
-        # connections to biosphere3 as well as ecoinvent
+        # Copy activities from another database to the foreground database
+        self.copy_activities(to_db=fg_dict.get("name"))
 
-        # Add exchanges to newly created activities
+        # Delete exchanges from activities in the foreground database
+        self.delete_exchanges()
+
+        # Add exchanges to activities in the foreground database
         # Append the exchange data to the "exchanges" list of dicts under the
         # relevant activity.
         for i in self.add_exchanges_data.index:
-            self.custom_db[
-                (
-                    self.add_exchanges_data.activity_database[i],
-                    self.add_exchanges_data.activity_code[i],
-                )
-            ]["exchanges"].append(
-                {
-                    "amount": self.add_exchanges_data.amount[i],
-                    "input": (
-                        self.add_exchanges_data.exchange_database[i],
-                        self.add_exchanges_data.exchange_code[i],
-                    ),
-                    "output": (
+            try:
+                self.custom_db[
+                    (
                         self.add_exchanges_data.activity_database[i],
                         self.add_exchanges_data.activity_code[i],
-                    ),
-                    "unit": self.add_exchanges_data.unit[i],
-                    "type": self.add_exchanges_data.exchange_type[i],
-                }
-            )
-
-        self.copy_activities(to_db=fg_dict.get("name"))
+                    )
+                ]["exchanges"].append(
+                    {
+                        "amount": self.add_exchanges_data.amount[i],
+                        "input": (
+                            self.add_exchanges_data.exchange_database[i],
+                            self.add_exchanges_data.exchange_code[i],
+                        ),
+                        "output": (
+                            self.add_exchanges_data.activity_database[i],
+                            self.add_exchanges_data.activity_code[i],
+                        ),
+                        "unit": self.add_exchanges_data.unit[i],
+                        "type": self.add_exchanges_data.exchange_type[i],
+                    }
+                )
+            except KeyError:
+                self.logging.warning(
+                    msg=f"ForegroundDatabase.__init__: {self.add_exchanges_data.activity[i]} not found in database"
+                )
 
         self.logging.info(msg="ForegroundDatabase.__init__: Custom database assembled")
 
@@ -236,11 +253,12 @@ class ForegroundDatabase:
             )
 
         # Write the custom database so it's usable by Brightway
-        bw.Database(fg_dict.get("name")).write(self.custom_db)
-
-        # @TODO Apply strategies?
-
-        # @TODO Link to existing databases
+        try:
+            bw.Database(fg_dict.get("name")).write(self.custom_db)
+        except KeyError as e:
+            self.logging.warning(
+                msg=f"ForegroundDatabase.__init__: KeyError on database write: {e}"
+            )
 
     def copy_activities(self, to_db: str):
         """
@@ -275,9 +293,9 @@ class ForegroundDatabase:
                     f"{_sdb} is not in Brightway project {self.project} "
                     f"imported databases"
                 )
-                sys.exit()
+                sys.exit(1)
 
-            # Use the source_database column to set the Brighway database being
+            # Use the source_database column to set the Brightway database being
             # searched
             _bwdb = bw.Database(_sdb)
 
@@ -373,13 +391,33 @@ class ForegroundDatabase:
                 "information"
             )
 
-        # @TODO Assemble tuples with the activity_database and activity_code to
-        # access the activity in self.custom_db
+        # Within every activity that needs to have exchanges deleted,
+        for _line in self.delete_exchanges_data.iterrows():
+            try:
+                # Use a tuple with the activity_database and activity_code to access the activity and its exchanges in self.custom_db.
+                # The exchanges for the activity are a list of dictionaries. Inside each dictionary is a key 'input'.
+                # This key value must be matched to the exchange_database and exchange_code from the data frame.
+                _del_ind = [
+                    _ex["input"]
+                    for _ex in self.custom_db[
+                        (_line[1].activity_database, _line[1].activity_code.strip())
+                    ]["exchanges"]
+                ].index((_line[1].exchange_database, _line[1].exchange_code.strip()))
+            except ValueError as e:
+                # If the exchanges does not exist, log a warning that includes information on the missing exchange
+                self.logging.warning(msg=f"ForegroundDatabase.delete_exchanges: {e}")
+                _del_ind = None
 
-        # @TODO Assemble the activity_database, exchange_code tuple to identify the
-        # exchange to delete
-
-        # @TODO Remove the exchange from the activity
+            # If the exchange exists,
+            if _del_ind:
+                # Remove it from the activity's list of exchanges
+                self.custom_db[
+                    (_line[1].activity_database, _line[1].activity_code.strip())
+                ]["exchanges"].pop(_del_ind)
+                # Record the exchange that was removed
+                self.logging.info(
+                    msg=f"ForegroundDatabase.delete_exchanges: Removed {_line[1].exchange} from {_line[1].activity}"
+                )
 
     def validate(self):
         """
@@ -396,7 +434,7 @@ class ForegroundDatabase:
                 msg=f"ForegroundDatabase.validate: Custom database is not "
                 f"valid: {validate}"
             )
-            sys.exit()
+            sys.exit(1)
         else:
             self.logging.info(
                 msg="ForegroundDatabase.validate: Custom database is valid"

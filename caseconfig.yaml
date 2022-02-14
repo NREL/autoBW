@@ -3,16 +3,15 @@ project_parameters:
     include_databases:
     - biosphere3
     - ecoinvent3.8 cut-off
-    - ecoinvent3.7.1 cut-off
 
 foreground_db:
     name: nrel psh
     fg_db_import: C:/Users/rhanes/GitHub/autoBW/inv_import_V1.xlsx
-    generate_keys: True
+    generate_keys: False
     save_db: True
     link_fg_to:
         biosphere3 : name, unit, categories
-        ecoinvent3.7.1 cut-off : name, unit, location, reference product
+        ecoinvent3.8 cut-off : name, unit, location, reference product
 
 
 calculations:

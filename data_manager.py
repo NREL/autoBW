@@ -255,7 +255,7 @@ class CreateActivities(Data):
         {"name": "std_dev", "type": float, "index": False, "backfill": None},
         {"name": "activity_location", "type": str, "index": False, "backfill": None},
         {"name": "activity_version", "type": float, "index": False, "backfill": None},
-        {"name": "code", "type": float, "index": False, "backfill": None},
+        {"name": "code", "type": str, "index": False, "backfill": None},
         {"name": "notes", "type": str, "index": False, "backfill": None},
     )
 

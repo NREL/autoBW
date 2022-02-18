@@ -78,23 +78,34 @@ class ForegroundDatabase:
 
         # Table of empty activities to add to the database. Fill in the
         # database columns with custom database name from the config file.
-        self.create_activities_data = CreateActivities(fpath=_import_template).backfill(
-            column="activity_database", value=fg_dict.get("name")
+        self.create_activities_data = (
+            CreateActivities(fpath=_import_template)
+            .backfill(column="activity_database", value=fg_dict.get("name"))
+            .apply(lambda x: x.str.strip() if x.dtype == "object" else x)
         )
 
         # Table of activities to copy to the foreground database from an
         # existing database
-        self.copy_activities_data = CopyActivities(fpath=_import_template)
+        self.copy_activities_data = CopyActivities(fpath=_import_template).apply(
+            lambda x: x.str.strip() if x.dtype == "object" else x
+        )
 
         # Table of exchanges to remove from the database
-        self.delete_exchanges_data = DeleteExchanges(fpath=_import_template).backfill(
-            column="activity_database", value=fg_dict.get("name")
+        self.delete_exchanges_data = (
+            DeleteExchanges(fpath=_import_template)
+            .backfill(column="activity_database", value=fg_dict.get("name"))
+            .apply(lambda x: x.str.strip() if x.dtype == "object" else x)
         )
 
         # Table of exchanges to add to the database. Fill in the database
         # columns with custom database name from the config file.
-        self.add_exchanges_data = AddExchanges(fpath=_import_template).backfill(
-            column=["activity_database", "exchange_database"], value=fg_dict.get("name")
+        self.add_exchanges_data = (
+            AddExchanges(fpath=_import_template)
+            .backfill(
+                column=["activity_database", "exchange_database"],
+                value=fg_dict.get("name"),
+            )
+            .apply(lambda x: x.str.strip() if x.dtype == "object" else x)
         )
 
         self.logging = logging
@@ -133,34 +144,41 @@ class ForegroundDatabase:
                 ],
                 index=self.create_activities_data.index,
             )
+            # The newly created exchanges also need codes. For exchanges that exist
+            # in the database being created and imported, these codes were already
+            # created and are stored in the self.create_activities_data DataFrame. For
+            # exchanges that exist in another database, like ecoinvent, the user
+            # must fill in these values before beginning the import process.
+            # In this step, codes stored in self.create_activities_data are assigned to
+            # the corresponding exchange. Codes already present in
+            # self.add_exchanges_data are NOT overwritten.
+            self.add_exchanges_data.activity_code = self.add_exchanges_data.merge(
+                self.create_activities_data,
+                on=["activity_database", "activity", "activity_location"],
+                how="outer",
+            ).code
+            # Filling the exchange codes is done in two steps. First the merge gets
+            # us previously created codes for new exchanges in the custom database.
+            # Then, the codes from the merge are combined with the existing
+            # exchange_code column, which may have codes from other databases.
+            _new_exchange_codes = self.add_exchanges_data.merge(
+                self.create_activities_data,
+                left_on=["exchange_database", "exchange", "activity_location"],
+                right_on=[
+                    "activity_database",
+                    "reference_product",
+                    "activity_location",
+                ],
+                how="left",
+            ).code
 
-        # The newly created exchanges also need codes. For exchanges that exist
-        # in the database being created and imported, these codes were already
-        # created and are stored in the self.create_activities_data DataFrame. For
-        # exchanges that exist in another database, like ecoinvent, the user
-        # must fill in these values before beginning the import process.
-        # In this step, codes stored in self.create_activities_data are assigned to
-        # the corresponding exchange. Codes already present in
-        # self.add_exchanges_data are NOT overwritten.
-        self.add_exchanges_data.activity_code = self.add_exchanges_data.merge(
-            self.create_activities_data,
-            on=["activity_database", "activity", "activity_location"],
-        ).code
+            self.add_exchanges_data.exchange_code = _new_exchange_codes.fillna(
+                ""
+            ).astype(str) + self.add_exchanges_data.exchange_code.astype(str).fillna("")
 
-        # Filling the exchange codes is done in two steps. First the merge gets
-        # us previously created codes for new exchanges in the custom database.
-        # Then, the codes from the merge are combined with the existing
-        # exchange_code column, which may have codes from other databases.
-        _new_exchange_codes = self.add_exchanges_data.merge(
-            self.create_activities_data,
-            left_on=["exchange_database", "exchange", "activity_location"],
-            right_on=["activity_database", "reference_product", "activity_location"],
-            how="left",
-        ).code
-
-        self.add_exchanges_data.exchange_code = _new_exchange_codes.astype(str).fillna(
-            ""
-        ) + self.add_exchanges_data.exchange_code.astype(str).fillna("")
+        # @TODO Add error handling: If any activities in create_activities_data or
+        # add_exchanges_data don't have non-NAN codes at this point, throw an error
+        # and stop
 
         # Log the activities to be created and their newly assigned codes
         self.logging.info(
@@ -197,36 +215,8 @@ class ForegroundDatabase:
         # Delete exchanges from activities in the foreground database
         self.delete_exchanges()
 
-        # Add exchanges to activities in the foreground database
-        # Append the exchange data to the "exchanges" list of dicts under the
-        # relevant activity.
-        for i in self.add_exchanges_data.index:
-            try:
-                self.custom_db[
-                    (
-                        self.add_exchanges_data.activity_database[i],
-                        self.add_exchanges_data.activity_code[i],
-                    )
-                ]["exchanges"].append(
-                    {
-                        "amount": self.add_exchanges_data.amount[i],
-                        "input": (
-                            self.add_exchanges_data.exchange_database[i],
-                            self.add_exchanges_data.exchange_code[i],
-                        ),
-                        "output": (
-                            self.add_exchanges_data.activity_database[i],
-                            self.add_exchanges_data.activity_code[i],
-                        ),
-                        "unit": self.add_exchanges_data.unit[i],
-                        "type": self.add_exchanges_data.exchange_type[i],
-                    }
-                )
-            except KeyError:
-                self.logging.warning(
-                    msg=f"ForegroundDatabase.__init__: {self.add_exchanges_data.activity[i]} "
-                    "not found in database"
-                )
+        # Add exchanges from foreground database and existing databases
+        self.add_exchanges()
 
         self.logging.info(msg="ForegroundDatabase.__init__: Custom database assembled")
 
@@ -423,6 +413,48 @@ class ForegroundDatabase:
                 self.logging.info(
                     msg="ForegroundDatabase.delete_exchanges: Removed "
                     f"{_line[1].exchange} from {_line[1].activity}"
+                )
+
+    def add_exchanges(self):
+        """
+        Add exchanges to existing activities in the foreground database.
+
+        Append the exchange data to the "exchanges" list of dicts under the
+        relevant activity.
+        """
+        for i in self.add_exchanges_data.index:
+            try:
+                self.custom_db[
+                    (
+                        self.add_exchanges_data.activity_database[i],
+                        self.add_exchanges_data.activity_code[i],
+                    )
+                ]["exchanges"].append(
+                    {
+                        "amount": self.add_exchanges_data.amount[i],
+                        "input": (
+                            self.add_exchanges_data.exchange_database[i],
+                            self.add_exchanges_data.exchange_code[i],
+                        ),
+                        "output": (
+                            self.add_exchanges_data.activity_database[i],
+                            self.add_exchanges_data.activity_code[i],
+                        ),
+                        "unit": self.add_exchanges_data.unit[i],
+                        "type": self.add_exchanges_data.exchange_type[i],
+                    }
+                )
+                self.logging.info(
+                    msg=f"ForegroundDatabase.add_exchanges: Added "
+                    f"{self.add_exchanges_data.exchange[i]} to"
+                    f" {self.add_exchanges_data.activity[i]}"
+                )
+            except KeyError:
+                self.logging.warning(
+                    msg=f"ForegroundDatabase.add_exchanges: {self.add_exchanges_data.activity[i]} "
+                    f"({self.add_exchanges_data.activity_database[i]}, "
+                    f" {self.add_exchanges_data.activity_code[i]}) "
+                    "not found in database"
                 )
 
     def validate(self):

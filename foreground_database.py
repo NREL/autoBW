@@ -202,7 +202,8 @@ class ForegroundDatabase:
             ] = {
                 "name": self.create_activities_data.activity[i],
                 "unit": self.create_activities_data.reference_product_unit[i],
-                "production_amount": self.create_activities_data.reference_product_amount[
+                "reference product": self.create_activities_data.reference_product[i],
+                "production amount": self.create_activities_data.reference_product_amount[
                     i
                 ],
                 "location": self.create_activities_data.activity_location[i],
@@ -350,6 +351,8 @@ class ForegroundDatabase:
         # Create the activity dictionary structure without exchange information
         _value = {
             "name": activity["name"],
+            "reference product": activity["reference product"],
+            "production amount": activity["production amount"],
             "unit": activity["unit"],
             "location": activity["location"],
             "exchanges": [],

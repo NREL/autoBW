@@ -134,6 +134,8 @@ class ForegroundDatabase:
 
         if fg_dict.get("generate_keys"):
             # Generate unique activity code with uuid.
+            # The code is different from the "flows" value, which is a
+            # separate UUID.
             # Because all activities in this DataFrame are new, all of them
             # need newly created codes. This can be done manually within the
             # file being imported, or automatically here.
@@ -347,17 +349,9 @@ class ForegroundDatabase:
 
         # Assemble the tuple that identifies this activity
         _key = (to_db, activity["code"])
-
         # Create the activity dictionary structure without exchange information
-        _value = {
-            "name": activity["name"],
-            "reference product": activity["reference product"],
-            "production amount": activity["production amount"],
-            "unit": activity["unit"],
-            "location": activity["location"],
-            "exchanges": [],
-        }
-
+        _value = activity.as_dict()
+        _value["exchanges"] = []
         self.logging.info(
             msg=f"ForegroundDatabase.ecoinvent_translator: Copying"
             f" {activity['name']} to database"
@@ -400,14 +394,7 @@ class ForegroundDatabase:
                         (_line[1].activity_database, _line[1].activity_code.strip())
                     ]["exchanges"]
                 ].index((_line[1].exchange_database, _line[1].exchange_code.strip()))
-            except ValueError as _e:
-                # If the exchanges does not exist, log a warning that includes information on
-                # the missing exchange
-                self.logging.warning(msg=f"ForegroundDatabase.delete_exchanges: {_e}")
-                _del_ind = None
 
-            # If the exchange exists,
-            if _del_ind:
                 # Remove it from the activity's list of exchanges
                 self.custom_db[
                     (_line[1].activity_database, _line[1].activity_code.strip())
@@ -417,6 +404,31 @@ class ForegroundDatabase:
                     msg="ForegroundDatabase.delete_exchanges: Removed "
                     f"{_line[1].exchange} from {_line[1].activity}"
                 )
+            except ValueError as _e:
+                # If the exchanges does not exist, log a warning that includes information on
+                # the missing exchange
+                self.logging.warning(msg=f"ForegroundDatabase.delete_exchanges: {_e}")
+                _del_ind = None
+
+        # If any activity has its own reference product as an input, remove that exchange.
+        # This crops up in activities copied directly from ecoinvent.
+        # Loop through the activities in self.custom_db
+
+        for _act in self.custom_db.keys():
+            # Check if the activity key (in the identifying tuple) is in the list of "input" codes from that activity's exchanges list
+            if any(
+                [
+                    _ex["input"] == _ex["output"]
+                    for _ex in self.custom_db[_act]["exchanges"]
+                ]
+            ):
+                # If so, get the index of the matching code
+                _pop_ind = [
+                    _ex["input"] == _ex["output"]
+                    for _ex in self.custom_db[_act]["exchanges"]
+                ].index(True)
+                # Then use .pop to remove it from the activity's exchanges list
+                self.custom_db[_act]["exchanges"].pop(_pop_ind)
 
     def add_exchanges(self):
         """

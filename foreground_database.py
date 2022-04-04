@@ -414,8 +414,9 @@ class ForegroundDatabase:
         # This crops up in activities copied directly from ecoinvent.
         # Loop through the activities in self.custom_db
 
-        for _act in self.custom_db.keys():
-            # Check if the activity key (in the identifying tuple) is in the list of "input" codes from that activity's exchanges list
+        for _act in self.custom_db:
+            # Check if the activity key (in the identifying tuple) is in the list
+            # of "input" codes from that activity's exchanges list
             if any(
                 [
                     _ex["input"] == _ex["output"]

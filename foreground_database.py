@@ -415,18 +415,14 @@ class ForegroundDatabase:
         for _act in self.custom_db.items():
             # Check if the activity key (in the identifying tuple) is in the list
             # of "input" codes from that activity's exchanges list
-            _gen = [
-                _ex["input"] == _ex["output"]
-                for _ex in self.custom_db[_act[0]]["exchanges"]
-            ]
+            _gen = [_ex["input"] == _ex["output"] for _ex in _act[1]["exchanges"]]
             if any(_gen):
                 # If so, get the index of the matching code
                 _pop_ind = [
-                    _ex["input"] == _ex["output"]
-                    for _ex in self.custom_db[_act[0]]["exchanges"]
+                    _ex["input"] == _ex["output"] for _ex in _act[1]["exchanges"]
                 ].index(True)
                 # Then use .pop to remove it from the activity's exchanges list
-                self.custom_db[_act[0]]["exchanges"].pop(_pop_ind)
+                _act[1]["exchanges"].pop(_pop_ind)
 
     def add_exchanges(self):
         """

@@ -16,8 +16,6 @@ import bw2data
 from bw2data.validate import db_validator
 from peewee import DoesNotExist
 
-# from bw2io import CSVImporter
-
 from data_manager import CreateActivities, AddExchanges, CopyActivities, DeleteExchanges
 
 
@@ -414,22 +412,21 @@ class ForegroundDatabase:
         # This crops up in activities copied directly from ecoinvent.
         # Loop through the activities in self.custom_db
 
-        for _act in self.custom_db:
+        for _act in self.custom_db.items():
             # Check if the activity key (in the identifying tuple) is in the list
             # of "input" codes from that activity's exchanges list
-            if any(
-                [
-                    _ex["input"] == _ex["output"]
-                    for _ex in self.custom_db[_act]["exchanges"]
-                ]
-            ):
+            _gen = [
+                _ex["input"] == _ex["output"]
+                for _ex in self.custom_db[_act[0]]["exchanges"]
+            ]
+            if any(_gen):
                 # If so, get the index of the matching code
                 _pop_ind = [
                     _ex["input"] == _ex["output"]
-                    for _ex in self.custom_db[_act]["exchanges"]
+                    for _ex in self.custom_db[_act[0]]["exchanges"]
                 ].index(True)
                 # Then use .pop to remove it from the activity's exchanges list
-                self.custom_db[_act]["exchanges"].pop(_pop_ind)
+                self.custom_db[_act[0]]["exchanges"].pop(_pop_ind)
 
     def add_exchanges(self):
         """

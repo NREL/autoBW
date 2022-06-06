@@ -348,7 +348,7 @@ class ForegroundDatabase:
 
         Returns
         ---------
-        
+
         A key and value pair with activity and exchange data copied from
         ecoinvent. The pair is formatted for inclusion in the foreground database
         in dictionary (pre-import) format.

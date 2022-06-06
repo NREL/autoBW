@@ -9,7 +9,7 @@ Welcome to autoBW's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-   
+
    _source/data_manager
    _source/local_project
    _source/foreground_database

@@ -23,46 +23,54 @@ class ForegroundDatabase:
     """
     Create foreground database from imported Excel data.
 
-    Methods in this class use user-provided data in Excel format to create a custom foreground
-    database. Activities and exchanges can be copied to the foreground database from ecoinvent.
+    Methods in this class use user-provided data in Excel format to create a foreground
+    life cycle inventory database. The foreground database is linked to local databases
+    in Brightway and accessible for calculations via the Brightway activity browser.
+    Activities and exchanges in the database can be created from scratch or copied to
+    the foreground database from ecoinvent and then edited.
     """
 
     def __init__(self, logging, prj_dict, fg_dict, file_io):
         """
-        Assemble a database to import into Brightway as a dictionary.
+        Assemble the foreground database as a dictionary.
 
         Parameters
         ----------
         logging
-            logger object for writing status messages
+            logger object for writing status messages to file
 
         prj_dict : dict
             Dictionary of project-level parameters.
-            name : str
-                Name of local Brightway project
-            include_databases : list
-                List of existing Brightway databases that must be in the local project.
+
+            Keys:
+                name : str
+                    Name of local Brightway project.
+                include_databases : list
+                    List of existing LCI databases that must be in the local Brightway project.
 
         fg_dict : dict
             Dictionary of database-level parameters.
-            name : str
-                Name of foreground database to create
-            fg_db_import : path,
-                Path to file with database information
-            generate_keys : Boolean
-                Whether to generate new activity keys or use the ones from the database
-                file
-            save_db : Boolean
-                Whether to save a copy of the database in two CSV files and one pickled object
-            link_fg_to : dict
-                Dictionary of existing database names and columns to link on.
+
+            Keys:
+                name : str
+                    Name of foreground database being created.
+                fg_db_import : path
+                    Path to import file with database information.
+                generate_keys : Boolean
+                    Whether to generate new activity keys (UUIDs) or use the ones from the import
+                    file.
+                save_db : Boolean
+                    Whether to save a copy of the database in two CSV files and one pickled object.
+                link_fg_to : dict
+                    Dictionary of existing database names and columns to link on.
 
         file_io : dict
             Dictionary defining the primary data directory.
 
-        Returns
-        -------
-        None
+            Keys:
+                data_directory : path
+                    Path to directory containing import file and other data.
+
         """
         # Initialize empty dictionary to hold the assembled database
         self.custom_db = {}
@@ -75,7 +83,7 @@ class ForegroundDatabase:
             sys.exit(1)
 
         # Table of empty activities to add to the database. Fill in the
-        # database columns with custom database name from the config file.
+        # database columns with foreground database name from the config file.
         self.create_activities_data = (
             CreateActivities(fpath=_import_template)
             .backfill(column="activity_database", value=fg_dict.get("name"))
@@ -96,7 +104,7 @@ class ForegroundDatabase:
         )
 
         # Table of exchanges to add to the database. Fill in the database
-        # columns with custom database name from the config file.
+        # columns with foreground database name from the config file.
         self.add_exchanges_data = (
             AddExchanges(fpath=_import_template)
             .backfill(
@@ -158,7 +166,7 @@ class ForegroundDatabase:
                 how="outer",
             ).code
             # Filling the exchange codes is done in two steps. First the merge gets
-            # us previously created codes for new exchanges in the custom database.
+            # us previously created codes for new exchanges in the foreground database.
             # Then, the codes from the merge are combined with the existing
             # exchange_code column, which may have codes from other databases.
             _new_exchange_codes = self.add_exchanges_data.merge(
@@ -221,11 +229,13 @@ class ForegroundDatabase:
 
         self.logging.info(msg="ForegroundDatabase.__init__: Custom database assembled")
 
-        self.logging.info(msg="ForegroundDatabase.__init__: Validating custom database")
+        self.logging.info(
+            msg="ForegroundDatabase.__init__: Validating foreground database"
+        )
 
         self.validate()
 
-        # Save a copy of the custom database for future reference
+        # Save a copy of the foreground database for future reference
         if fg_dict.get("save_db", True):
             with open(
                 os.path.join(file_io.get("data_directory"), "imported_db.obj"), "wb"
@@ -243,7 +253,7 @@ class ForegroundDatabase:
                 index=False,
             )
 
-        # Write the custom database so it's usable by Brightway
+        # Write the foreground database so it's usable by Brightway
         try:
             bw.Database(fg_dict.get("name")).write(self.custom_db)
         except KeyError as _e:
@@ -253,18 +263,18 @@ class ForegroundDatabase:
 
     def copy_activities(self, to_db: str):
         """
-        Copy activities and exchanges from an existing database to a custom database.
+        Copy activities and exchanges from an existing database to the foreground database.
 
         Read from the Copy Activities input dataset to locate activities and
-        their exchanges in the source database (ecoinvent format is assumed),
-        format the data for inclusion in the custom database, and copy the
-        data to the custom database. Any activities that are listed for copying
+        their exchanges in the local source database (ecoinvent format is assumed),
+        format the data for inclusion in the foreground database, and copy the
+        data to the foreground database. Any activities that are listed for copying
         but don't exist in the source database are skipped with a warning.
 
         Parameters
         ----------
         to_db : str
-            Name of
+            Name of foreground database receiving the activity copies.
         """
         if self.copy_activities_data.empty:
             self.logging.warning(
@@ -301,7 +311,7 @@ class ForegroundDatabase:
 
                     # If the activity exists, use a separate method to
                     # format the ecoinvent information for addition to the
-                    # custom database.
+                    # foreground database.
                     _act_to_add = self.ecoinvent_translator(activity=_act, to_db=to_db)
 
                     self.custom_db[_act_to_add[0]] = _act_to_add[1]
@@ -318,7 +328,7 @@ class ForegroundDatabase:
 
         self.logging.info(
             msg=f"ForegroundDatabase.copy_activities: {len(self.custom_db) - _dblen} activities "
-            f"copied to custom database"
+            f"copied to foreground database"
         )
 
         return None
@@ -327,7 +337,7 @@ class ForegroundDatabase:
         self, activity: bw2data.backends.peewee.proxies.Activity, to_db: str
     ):
         """
-        Translate an ecoinvent activity with exchanges into the custom database format.
+        Translate an ecoinvent activity with exchanges into the foreground database format.
 
         Parameters
         ----------
@@ -338,8 +348,9 @@ class ForegroundDatabase:
 
         Returns
         ---------
+        
         A key and value pair with activity and exchange data copied from
-        ecoinvent. The pair is formatted for inclusion in the custom database
+        ecoinvent. The pair is formatted for inclusion in the foreground database
         in dictionary (pre-import) format.
         """
         if activity is None:
@@ -363,11 +374,11 @@ class ForegroundDatabase:
         return _key, _value
 
     def delete_exchanges(self):
-        """Remove exchanges from the custom database."""
+        """Remove exchanges from the foreground database."""
         if not self.custom_db:
             self.logging.warning(
                 msg="ForegroundDatabase.delete_exchanges: No exchanges in "
-                "custom database to delete"
+                "foreground database to delete"
             )
 
         if self.delete_exchanges_data.empty:
@@ -468,7 +479,7 @@ class ForegroundDatabase:
 
     def validate(self):
         """
-        Use built-in Brightway method to validate the custom database before linking.
+        Use built-in Brightway method to validate the foreground database before linking.
 
         If the validation fails, db_validator returns an Exception. In this
         case the code fails as well and the Exception is written to the log

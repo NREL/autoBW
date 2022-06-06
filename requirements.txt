@@ -4,3 +4,4 @@ pre-commit==2.16.0
 psycopg2
 pylint==2.12.2
 pyyaml~=6.0
+sphinx>=4.2.0

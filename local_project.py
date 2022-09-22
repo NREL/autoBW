@@ -26,6 +26,7 @@ class LocalProject:
         parser
 
         logging
+            logger object for writing status messages to file
 
         """
         # read in config (YAML) file with error handling; get variable groups

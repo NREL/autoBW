@@ -76,7 +76,7 @@ class ForegroundDatabase:
         self.custom_db = {}
 
         # Get the path to the XLSX file with importable database information
-        _import_template = fg_dict.get("fg_db_import")
+        _import_template = os.path.join(file_io['data_directory'], fg_dict.get("fg_db_import"))
 
         if not os.path.isfile(_import_template):
             logging.error(msg=f"{_import_template} is not a file")

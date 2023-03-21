@@ -1,17 +1,17 @@
 project_parameters:
-    name: psh_lca
+    name: PSH LCA FY23
     include_databases:
     - biosphere3
     - ecoinvent3.8 cut-off
 
 foreground_db:
-    name: nrel psh
-    fg_db_import: C:/Users/rhanes/GitHub/autoBW/inv_import_V1.xlsx
+    name: pshlcafy23
+    fg_db_import: inv_import_v10_mid_mix_all.xlsx
     generate_keys: False
     save_db: True
     link_fg_to:
         biosphere3 : name, unit, categories
-        ecoinvent3.8 cut-off : name, unit, location, reference product
+        ecoinvent3.8 cut-off: name, unit, location, reference product
 
 
 calculations:

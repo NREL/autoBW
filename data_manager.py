@@ -74,7 +74,7 @@ class Data(pd.DataFrame):
         if backfill:
             for _column in self.COLUMNS:
                 if _column["backfill"] is not None:
-                    self.bfill(column=_column["name"], value=_column["backfill"])
+                    self.dmbackfill(column=_column["name"], value=_column["backfill"])
 
     @staticmethod
     def load(fpath, columns, header=0, sheet=None):
@@ -117,7 +117,7 @@ class Data(pd.DataFrame):
         else:
             return _df
 
-    def bfill(self, column, value=0):
+    def dmbackfill(self, column, value=0):
         """
         Replace NaNs in <column> with <value>.
 

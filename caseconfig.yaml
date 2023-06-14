@@ -1,0 +1,14 @@
+project_parameters:
+    name: autoBW Development
+    include_databases:
+    - biosphere3
+    - ecoinvent 3.8 cut-off
+
+foreground_db:
+    name: importtemplate
+    fg_db_import: import_template.xlsx
+    generate_keys: False
+    save_db: True
+    link_fg_to:
+        biosphere3 : name, unit, categories
+        ecoinvent 3.8 cut-off: name, unit, location, reference product

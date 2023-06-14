@@ -1,0 +1,220 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Data Manager &#8212; autoBW 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Local Project" href="local_project.html" />
+    <link rel="prev" title="Welcome to autoBW’s documentation!" href="../index.html" />
+
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+
+
+          <div class="body" role="main">
+
+  <section id="module-data_manager">
+<span id="data-manager"></span><h1>Data Manager<a class="headerlink" href="#module-data_manager" title="Permalink to this headline">¶</a></h1>
+<p>Created on January 19 2022.</p>
+<p>Uses code from Feedstock Production Emissions to Air Model (FPEAM) Copyright
+(c) 2018 Alliance for Sustainable Energy, LLC; Noah Fisher.
+Builds on functionality in the FPEAM’s Data.py.
+Unmodified FPEAM code is available at <a class="reference external" href="https://github.com/NREL/fpeam">https://github.com/NREL/fpeam</a>.</p>
+<p>&#64;author: rhanes</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="data_manager.AddExchanges">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_manager.</span></span><span class="sig-name descname"><span class="pre">AddExchanges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fpath=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns={'activity':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'activity_code':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'activity_database':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'activity_location':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'amount':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'exchange':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'exchange_code':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'exchange_database':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'exchange_location':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'exchange_type':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'unit':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backfill=True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#data_manager.AddExchanges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in and process the Add Exchanges data table.</p>
+<p>This data table enumerated exchanges to be added to activities in a custom database.</p>
+<p>Initialize Add Exchanges data frame.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="data_manager.CopyActivities">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_manager.</span></span><span class="sig-name descname"><span class="pre">CopyActivities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fpath=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns={'activity':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'activity_code':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'destination_database':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'source_database':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backfill=True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#data_manager.CopyActivities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in and process the data table enumerating activities to be copied.</p>
+<p>Activities and their exchanges are copied from an existing database to a custom database.</p>
+<p>Initialize Copy Activities data frame.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="data_manager.CreateActivities">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_manager.</span></span><span class="sig-name descname"><span class="pre">CreateActivities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fpath=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns={'activity':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'activity_database':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'activity_location':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'activity_type':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'activity_version':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'code':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'notes':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'reference_product':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'reference_product_amount':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'reference_product_unit':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'std_dev':</span> <span class="pre">&lt;class</span> <span class="pre">'float'&gt;}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backfill=True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#data_manager.CreateActivities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in and process the Create Activity data table.</p>
+<p>This data table enumerates activities to be created and added to a custom database.</p>
+<p>Initialize Create Activities data frame.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="data_manager.Data">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_manager.</span></span><span class="sig-name descname"><span class="pre">Data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fpath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sheet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backfill</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#data_manager.Data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Data representation.</p>
+<p>Specific datasets are created as child classes with
+defined column names, data types, and backfilling values. Creating child
+classes removes the need to define column names etc when the classes are
+called to read data from files.</p>
+<p>Store file IO information into self.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fpath</strong> – Filepath location of data to be read in</p></li>
+<li><p><strong>columns</strong> – List of columns to backfill</p></li>
+<li><p><strong>sheet</strong> – Name of sheet to read in</p></li>
+<li><p><strong>backfill</strong> – Boolean flag: perform backfilling with datatype-specific value</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="data_manager.Data.backfill">
+<span class="sig-name descname"><span class="pre">backfill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#data_manager.Data.backfill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replace NaNs in &lt;column&gt; with &lt;value&gt;.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>column</strong> (<em>[</em><em>string</em><em>]</em>) – Name of column with NaNs to be backfilled</p></li>
+<li><p><strong>value</strong> (<em>[</em><em>any</em><em>]</em>) – Value for backfill</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>DataFrame with [column] backfilled with [value]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_manager.Data.load">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fpath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sheet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#data_manager.Data.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load data from a text file at &lt;fpath&gt;. Check and set column names.</p>
+<p>See pandas.read_table() help for additional arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fpath</strong> (<em>[</em><em>string</em><em>]</em>) – file path to CSV file or SQLite database file</p></li>
+<li><p><strong>columns</strong> (<em>[</em><em>dict</em><em>]</em>) – {name: type, …}</p></li>
+<li><p><strong>header</strong> (<em>[</em><em>int</em><em>]</em>) – 0-based row index containing column names</p></li>
+<li><p><strong>sheet</strong> (<em>[</em><em>str</em><em>]</em>) – Specify the name of the sheet to be read in.
+If no sheet name is provided, the first sheet is read.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="data_manager.Data.validate">
+<span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#data_manager.Data.validate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that data are not empty.</p>
+<p>Return False if empty and True otherwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Boolean flag</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="data_manager.DeleteExchanges">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">data_manager.</span></span><span class="sig-name descname"><span class="pre">DeleteExchanges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fpath=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns={'activity':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'activity_code':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'activity_database':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'exchange':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'exchange_code':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'exchange_database':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'notes':</span> <span class="pre">&lt;class</span> <span class="pre">'str'&gt;}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backfill=True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#data_manager.DeleteExchanges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read in and process the Delete Exchanges data table.</p>
+<p>This data table enumerated exchanges to be removed from a custom database.</p>
+<p>Initialize Delete Exchanges data frame.</p>
+</dd></dl>
+
+</section>
+
+
+          </div>
+
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">autoBW</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Data Manager</a></li>
+<li class="toctree-l1"><a class="reference internal" href="local_project.html">Local Project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="foreground_database.html">Foreground Database</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../index.html" title="previous chapter">Welcome to autoBW’s documentation!</a></li>
+      <li>Next: <a href="local_project.html" title="next chapter">Local Project</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Rebecca Hanes, Dylan Hettinger.
+
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+
+      |
+      <a href="../_sources/_source/data_manager.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+
+
+
+  </body>
+</html>

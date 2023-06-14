@@ -80,7 +80,7 @@ class ForegroundDatabase:
 
         if not os.path.isfile(_import_template):
             logging.error(msg=f"{_import_template} is not a file")
-            sys.exit(1)
+            sys.exit('Error: Check log file')
 
         # Table of empty activities to add to the database. Fill in the
         # database columns with foreground database name from the config file.
@@ -136,7 +136,7 @@ class ForegroundDatabase:
                 msg=f"ForegroundDatabase.__init__: Missing created or copied activities"
                 f" {_missing_acts}"
             )
-            sys.exit(1)
+            sys.exit('Error: Check log file')
 
         if fg_dict.get("generate_keys"):
             # Generate unique activity code with uuid.
@@ -294,7 +294,7 @@ class ForegroundDatabase:
                     f"{_sdb} is not in Brightway project {self.project} "
                     f"imported databases"
                 )
-                sys.exit(1)
+                sys.exit('Error: Check log file')
 
             # Use the source_database column to set the Brightway database being
             # searched
@@ -491,7 +491,7 @@ class ForegroundDatabase:
                 msg=f"ForegroundDatabase.validate: Custom database is not "
                 f"valid: {validate}"
             )
-            sys.exit(1)
+            sys.exit('Error: Check log file')
         else:
             self.logging.info(
                 msg="ForegroundDatabase.validate: Custom database is valid"

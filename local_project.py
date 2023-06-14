@@ -43,7 +43,7 @@ class LocalProject:
                 _flags = _bwconfig.get("flags", {})
         except IOError as err:
             logging.error(msg=f"LocalProject: {bwconfig_filename} {err}")
-            sys.exit(1)
+            sys.exit('Error: Check log file')
 
         try:
             with open(caseconfig_filename, "r", encoding="utf-8") as _f:
@@ -53,7 +53,7 @@ class LocalProject:
                 proj_params = _caseconfig.get("project_parameters", {})
         except IOError as err:
             logging.error(msg=f"LocalProject: {caseconfig_filename} {err}")
-            sys.exit(1)
+            sys.exit('Error: Check log file')
 
         # If the project already exists, throw an error.
         if _flags.get("create_new_project") and proj_params.get("name") in [
@@ -62,7 +62,7 @@ class LocalProject:
             logging.error(
                 msg=f"LocalProject: Project {proj_params.get('name')} already exists."
             )
-            sys.exit(1)
+            sys.exit('Error: Check log file')
 
         # Instantiate the new project
         bw.projects.set_current(proj_params.get("name"))
@@ -96,7 +96,7 @@ class LocalProject:
                 logging.error(
                     msg=f"LocalProject: {_missing} must be imported before proceeding"
                 )
-                sys.exit(1)
+                sys.exit('Error: Check log file')
 
         else:
             logging.info(

@@ -86,7 +86,7 @@ class ForegroundDatabase:
         # database columns with foreground database name from the config file.
         self.create_activities_data = (
             CreateActivities(fpath=_import_template)
-            .backfill(column="activity_database", value=fg_dict.get("name"))
+            .dmbackfill(column="activity_database", value=fg_dict.get("name"))
             .apply(lambda x: x.str.strip() if x.dtype == "object" else x)
         )
 
@@ -99,7 +99,7 @@ class ForegroundDatabase:
         # Table of exchanges to remove from the database
         self.delete_exchanges_data = (
             DeleteExchanges(fpath=_import_template)
-            .backfill(column="activity_database", value=fg_dict.get("name"))
+            .dmbackfill(column="activity_database", value=fg_dict.get("name"))
             .apply(lambda x: x.str.strip() if x.dtype == "object" else x)
         )
 
@@ -107,7 +107,7 @@ class ForegroundDatabase:
         # columns with foreground database name from the config file.
         self.add_exchanges_data = (
             AddExchanges(fpath=_import_template)
-            .backfill(
+            .dmbackfill(
                 column=["activity_database", "exchange_database"],
                 value=fg_dict.get("name"),
             )
